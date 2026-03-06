@@ -1,0 +1,19 @@
+{% for message in messages %}
+{% if message['role'] == 'system' %}
+<|system|>
+{{ message['content'] }}
+</|system|>
+
+{% elif message['role'] == 'user' %}
+<|doctor|>
+{{ message['content'] }}
+</|doctor|>
+
+{% elif message['role'] == 'assistant' %}
+<|patient|>
+{{ message['content'] }}
+</|patient|>
+{% endif %}
+{% endfor %}
+{% if add_generation_prompt %}<|patient|>
+{% endif %}
