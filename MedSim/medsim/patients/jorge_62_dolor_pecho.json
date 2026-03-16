@@ -1,0 +1,69 @@
+{
+  "id": "jorge_62_dolor_pecho",
+  "name": "Jorge",
+  "age": 62,
+  "region": "Córdoba",
+  "administrative": {
+    "full_name": "Jorge Díaz",
+    "date_of_birth": "1963-01-20",
+    "dni": "14.987.654",
+    "insurance": "PAMI",
+    "sex": "Masculino",
+    "occupation": "Jubilado"
+  },
+  "triage": {
+    "reference_short": "Dolor de pecho"
+  },
+  "institutional_history": {
+    "diagnoses": [
+      "Hipertensión arterial"
+    ],
+    "surgeries": [
+      "Apendicectomía (juventud)"
+    ],
+    "allergies": [],
+    "medications_current": [
+      "Enalapril (a veces se olvida)"
+    ]
+  },
+  "recent_studies": {
+    "labs": [],
+    "imaging": [],
+    "notes": []
+  },
+  "chief_complaint": "Doctor, me agarra como una presión en el pecho desde hace un rato y me asusté.",
+  "what_they_feel": "Siento una opresión en el centro del pecho y me falta un poco el aire. Estoy transpirado y preocupado.",
+  "symptoms_reported": [
+    "Dolor/opresión en el pecho (inicio hace ~45 minutos)",
+    "Sudoración",
+    "Falta de aire leve",
+    "Dolor que a veces se va al brazo izquierdo"
+  ],
+  "known_medical_history": {
+    "enfermedades_previas": "Hipertensión (dice que 'a veces la tiene alta').",
+    "medicacion_habitual": "Toma enalapril, pero a veces se olvida.",
+    "alergias": "Niega.",
+    "antecedentes_familiares": "Padre con infarto a los 60 y pico.",
+    "habitos": "Ex fumador (dejó hace 5 años).",
+    "cirugias": "Apendicectomía de joven."
+  },
+  "unknown_real_problem": "Síndrome coronario agudo (posible infarto). El paciente NO lo sabe.",
+  "doctor_display_real_problem": "Síndrome coronario agudo (dolor torácico típico)",
+  "true_case": {
+    "diagnostico_principal": "Síndrome coronario agudo (SCA)",
+    "diferenciales": [
+      "Angina inestable",
+      "Reflujo gastroesofágico / espasmo esofágico",
+      "Embolia pulmonar",
+      "Pericarditis",
+      "Dolor osteomuscular (costocondritis)"
+    ],
+    "indicaciones_plan": "Emergencia: monitorización, ECG inmediato y seriado, troponinas seriadas y laboratorio. Manejo como SCA hasta descartar: evaluación de riesgo, oxígeno si hipoxemia, analgesia y antiagregación/anticoagulación según protocolo institucional. Preparar derivación/activación de hemodinamia si hay criterios (p. ej., STEMI). Indicaciones de reposo, acceso venoso, control de PA y tratamiento de HTA según necesidad.",
+    "receta": "No corresponde receta ambulatoria: requiere manejo intrahospitalario/guardia. Al alta (si aplica), plan de prevención secundaria según cardiología."
+  },
+  "personality": "Ansioso/a",
+  "language_level": "B",
+  "medical_history_recall": "High",
+  "cognitive_confusion": "Normal",
+  "speaking_style": "cordobes_sutil"
+}
