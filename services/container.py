@@ -14,22 +14,22 @@ from services.tts_service import TTSService
 class ServiceContainer:
     def __init__(self):
         self.settings = load_settings()
-        self.database_service = DatabaseService(self.settings.db_path)
-        self.patient_service = PatientService(self.settings.patients_dir)
+        self.database_service = DatabaseService(self.settings.DB_PATH)
+        self.patient_service = PatientService(self.settings.PATIENTS_DIR)
         self.prompt_service = PromptService()
         self.encounter_service = EncounterService(self.patient_service, self.prompt_service, self.database_service)
         self.llm_service = LLMService(self.settings)
         self.stt_service = STTService(
-            api_url=self.settings.stt_api_url,
-            api_key=self.settings.stt_api_key,
-            model=self.settings.stt_model,
+            api_url=self.settings.STT_API_URL,
+            api_key=self.settings.STT_API_KEY,
+            model=self.settings.STT_MODEL,
         )
         self.tts_service = TTSService(
-            api_url=self.settings.tts_api_url,
-            api_key=self.settings.tts_api_key,
-            voice_id=self.settings.tts_voice_id,
-            model_id=self.settings.tts_model_id,
-            language=self.settings.tts_language,
+            api_url=self.settings.TTS_API_URL,
+            api_key=self.settings.TTS_API_KEY,
+            voice_id=self.settings.TTS_VOICE_ID,
+            model_id=self.settings.TTS_MODEL_ID,
+            language=self.settings.TTS_LANGUAGE,
             speed=None,
             temperature=None,
         )

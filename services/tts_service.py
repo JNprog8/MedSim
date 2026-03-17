@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 import aiohttp
 from fastapi import HTTPException
 
-from services.settings import normalize_openai_base_url
+from services.utils import normalize_openai_base_url
 
 
 class TTSService:
