@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedSim - Evaluador</title>
+  <link rel="stylesheet" href="/frontend-assets/styles.css" />
+  <style>
+    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
+    .eval-card { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15,23,42,0.06); }
+    .eval-head { padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.06); display:flex; gap:10px; align-items:center; justify-content:space-between; }
+    .eval-body { padding: 14px; }
+    .eval-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .eval-input, .eval-select { border: 1px solid rgba(15,23,42,0.14); border-radius: 12px; padding: 10px 12px; background: #fff; }
+    .eval-btn { border: 1px solid rgba(15,23,42,0.14); background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; color: #0f172a; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+    .eval-btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
+    .eval-btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
+    .eval-btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
+    .eval-btn.danger { background:#b42318; border-color:#b42318; color:#fff; }
+    .eval-btn.danger:hover { background:#9f1f16; border-color:#9f1f16; }
+    .eval-small { font-size: 12px; opacity: .8; }
+
+    .app-header { position:relative; display:flex; justify-content:center; align-items:center; padding: 20px 12px 10px; }
+    .app-title { font-size: 32px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
+    .back-link { position:absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+
+    .main { width:min(1500px, 99vw); margin: 0 auto; }
+    .saved-wrap { width:min(1320px, 98vw); margin: 14px auto 20px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-top:1px solid rgba(15,23,42,0.10); padding:10px 8px; font-size: 13px; vertical-align: top; }
+    th { font-size: 12px; color:#334155; text-align:left; }
+    .chip { display:inline-flex; align-items:center; gap:6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; border: 1px solid rgba(15,23,42,0.10); background: rgba(148,163,184,0.18); color:#0f172a; }
+    .chip.ok { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.25); }
+    .chip.warn { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.25); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; }
+    .modal { position: fixed; top: 6vh; left:50%; transform: translateX(-50%); width:min(860px, 92vw); background:#fff; border-radius: 14px; border:1px solid #ddd; display:none; }
+    .modal .eval-head { border-bottom:1px solid #eee; }
+    .modal .eval-body { max-height: 78vh; overflow:auto; }
+    .session-title { font-size:20px; font-weight:800; margin:0; color:#0f172a; }
+    .session-copy { margin:0; color:#475569; line-height:1.4; }
+    .field-label { font-weight:600; color:#111827; }
+    .field-hint { font-size:12px; color:#64748b; }
+    .form-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <a class="eval-btn back-link" href="/frontend/index">&lt; Volver</a>
+      <div class="app-title">MedSim</div>
+    </header>
+
+    <main class="main">
+      <section class="saved-wrap">
+        <div class="eval-card">
+          <div class="eval-head">
+            <div>
+              <div style="font-weight:800;">Conversaciones</div>
+              <div class="eval-small" id="saved-status"></div>
+            </div>
+            <div class="eval-row">
+              <button id="btn-new-session" class="eval-btn primary" type="button">
+                <span aria-hidden="true" style="font-weight:900;">+</span>
+                Iniciar nueva sesión
+              </button>
+              <a class="eval-btn" href="/frontend/patients" title="ABM pacientes">Pacientes</a>
+              <a class="eval-btn" href="/frontend/students" title="ABM alumnos">Alumnos</a>
+            </div>
+          </div>
+          <div class="eval-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>Paciente</th>
+                  <th>Profesor</th>
+                  <th>Estado</th>
+                  <th>encounter_id</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="saved-encounters">
+                <tr><td colspan="6" class="eval-small">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <div class="modal" id="modal-session">
+    <div class="eval-head">
+      <div style="font-weight:800;">Iniciar nueva sesión</div>
+      <button class="eval-btn" data-close type="button">cerrar</button>
+    </div>
+    <div class="eval-body">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="field-label">Paciente</label>
+          <select id="patient-select" class="eval-select"></select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Alumno</label>
+          <select id="student-select" class="eval-select"></select>
+                </div>
+        <div class="form-group">
+          <label class="field-label">Evaluador/a</label>
+          <input id="evaluator-name" class="eval-input" placeholder="Nombre completo" />
+          <small class="field-hint">Tu nombre se fija en la planilla SEGUE.</small>
+        </div>
+      </div>
+
+      <div class="eval-row" style="justify-content:flex-end; margin-top:14px;">
+        <button id="btn-launcher-cancel" class="eval-btn" data-close type="button">Cancelar</button>
+        <button id="btn-start" class="eval-btn primary" type="button">Iniciar sesión</button>
+      </div>
+      <div class="eval-small" style="margin-top:8px;">Una vez que comiences, la conversación y la planilla se habilitan.</div>
+    </div>
+  </div>
+
+  <script src="/frontend-assets/evaluator_dashboard.js"></script>
+</body>
+</html>

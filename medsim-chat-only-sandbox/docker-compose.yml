@@ -1,0 +1,32 @@
+﻿services:
+  medsim-chat-only:
+    build: .
+    container_name: medsim-chat-only
+    ports:
+      - "8001:8080"
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - PATIENT_LLM_URL=${PATIENT_LLM_URL:-}
+      - PATIENT_LLM_API_KEY=${PATIENT_LLM_API_KEY:-}
+      - PATIENT_LLM_MODEL=${PATIENT_LLM_MODEL:-}
+      - STT_API_URL=${STT_API_URL:-}
+      - STT_API_KEY=${STT_API_KEY:-}
+      - STT_MODEL=${STT_MODEL:-}
+      - TTS_API_URL=${TTS_API_URL:-}
+      - TTS_API_KEY=${TTS_API_KEY:-}
+      - TTS_VOICE_ID=${TTS_VOICE_ID:-}
+      - TTS_MODEL_ID=${TTS_MODEL_ID:-}
+      - TTS_LANGUAGE=${TTS_LANGUAGE:-}
+      - PATIENTS_DIR=/app/patients
+      - STUDENTS_DIR=/app/students
+      - EVALUATIONS_DIR=/app/evaluations
+      - ENCOUNTERS_DIR=/app/encounters
+      - AUDIO_DIR=/app/audio
+    volumes:
+      - ./patients:/app/patients
+      - ./students:/app/students
+      - ./evaluations:/app/evaluations
+      - ./encounters:/app/encounters
+      - ./audio:/app/audio
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

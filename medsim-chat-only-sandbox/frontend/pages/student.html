@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSim</title>
+    <link rel="stylesheet" href="/frontend-assets/styles.css">
+</head>
+<body>
+    <div class="app">
+        <header class="app-header">
+            <button id="menu-button" class="icon-button" type="button" aria-label="Abrir menu">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M4 6a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5A1 1 0 0 1 4 6Zm0 6a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 5a1 1 0 1 0 0 2h14a1 1 0 1 0 0-2H5Z"/>
+                </svg>
+            </button>
+            <div class="app-title">MedSim</div>
+        </header>
+
+        <div id="sidebar-overlay" class="sidebar-overlay" hidden></div>
+        <aside id="sidebar" class="sidebar" aria-label="Configuracion">
+            <div class="api-config">
+                <div class="sidebar-card">
+                    <div class="sidebar-card-title">LLM</div>
+                    <div class="config-stack">
+                        <select id="llm-provider" class="model-select sidebar-select" aria-label="Proveedor LLM">
+                            <option value="custom">Custom</option>
+                            <option value="ollama">Ollama (local)</option>
+                            <option value="gemini">Gemini</option>
+                        </select>
+                        <input type="text" id="api-key" placeholder="Gemini API Key" class="api-input" />
+                        <div class="config-inline">
+                            <input type="text" id="api-url" placeholder="http://host.docker.internal:11434/v1" class="api-input" list="llm-url-options" />
+                            <button id="save-config" class="config-button">Save Config</button>
+                        </div>
+                        <datalist id="llm-url-options"></datalist>
+                        <div class="config-inline compact">
+                            <button id="auto-llm-config" class="config-button">Auto LLM</button>
+                            <div id="api-status" class="status-indicator"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <div class="sidebar-card-title">STT (Groq)</div>
+                    <div class="config-stack">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="audio-toggle">
+                            <span class="toggle-text">Audio bidireccional</span>
+                        </label>
+                        <input type="text" id="stt-api-url" placeholder="STT base_url (Groq: https://api.groq.com/openai/v1)" class="api-input" />
+                        <input type="text" id="stt-api-key" placeholder="STT API key" class="api-input" />
+                        <input type="text" id="stt-model" placeholder="STT model (ej. whisper-large-v3)" class="api-input" />
+                        <div class="config-inline">
+                            <button id="save-stt-config" class="config-button">Save STT</button>
+                        </div>
+                        <div class="config-inline compact">
+                            <button id="test-stt" class="config-button secondary-button">Test STT</button>
+                            <div id="stt-status" class="status-indicator"></div>
+                        </div>
+                        <div id="stt-mode" class="tts-mode">STT: via API</div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <div class="sidebar-card-title">TTS (Cartesia)</div>
+                    <div class="config-stack">
+                        <input type="text" id="tts-api-url" placeholder="TTS base_url (Cartesia: https://api.cartesia.ai)" class="api-input" />
+                        <input type="text" id="tts-api-key" placeholder="TTS API key" class="api-input" />
+                        <input type="text" id="tts-voice-id" placeholder="TTS voice (OpenAI) o voice_id UUID (Cartesia/ElevenLabs)" class="api-input" />
+                        <input type="text" id="tts-language" placeholder="Idioma TTS (ej. es, es-AR)" class="api-input" />
+                        <input type="text" id="tts-speed" placeholder="Cartesia speed (ej. 0.92)" class="api-input" />
+                        <input type="text" id="tts-temperature" placeholder="Cartesia temperature (ej. 0.35)" class="api-input" />
+                        <div class="config-inline">
+                            <input type="text" id="tts-model-id" placeholder="TTS model (Cartesia: sonic)" class="api-input" />
+                            <button id="save-tts-config" class="config-button">Save TTS</button>
+                        </div>
+                        <div class="config-inline compact">
+                            <button id="test-tts" class="config-button secondary-button">Test TTS</button>
+                            <div id="tts-status" class="status-indicator"></div>
+                        </div>
+                        <div id="tts-mode" class="tts-mode">TTS: via API</div>
+                        <div class="audio-log-card">
+                            <div class="audio-log-title">Audio Logs</div>
+                            <div id="audio-log-list" class="audio-log-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-grid">
+            <section class="chat-section">
+                <div id="patient-bar" class="patient-bar"></div>
+                <div class="chat-container">
+                    <div id="messages" class="messages"></div>
+                    <div class="text-panel">
+                        <input type="text" id="text-message" class="text-message" placeholder="Escribi al paciente (Enter para enviar)" />
+                        <button id="send-button" class="send-button">Send</button>
+                    </div>
+                    <div class="control-panel">
+                        <button id="mic-button" class="mic-button" type="button" title="Grabar/Detener" aria-label="Microfono">
+                            <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a1 1 0 0 1 2 0a7 7 0 0 1-6 6.92V20h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-2.08A7 7 0 0 1 5 11a1 1 0 1 1 2 0a5 5 0 0 0 10 0Z"/>
+                            </svg>
+                        </button>
+                        <div id="mic-hint" class="mic-hint">Microfono: configura Gemini y ElevenLabs</div>
+                        <div id="status" class="status">Ready</div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="clinical-section" aria-label="Ficha clinica">
+                <div class="clinical-card">
+                    <div class="clinical-tabs" role="tablist" aria-label="Panel lateral">
+                        <button id="tab-clinical" class="clinical-tab active" type="button" role="tab" aria-selected="true">Ficha clinica</button>
+                        <button id="tab-segue" class="clinical-tab" type="button" role="tab" aria-selected="false">Camino SEGUE</button>
+                    </div>
+                    <div id="panel-clinical" class="clinical-tab-panel active" role="tabpanel">
+                        <div class="clinical-title">Ficha clinica</div>
+                        <div id="clinical-panel" class="clinical-panel">Elegi un paciente para ver sus datos clinicos.</div>
+                    </div>
+                    <div id="panel-segue" class="clinical-tab-panel" role="tabpanel" hidden>
+                        <div class="clinical-title">Camino SEGUE</div>
+                        <div id="segue-panel" class="segue-panel segue-panel-inactive">
+                            <div class="segue-header">
+                                <div class="segue-title">Checklist SEGUE</div>
+                            </div>
+                            <div id="segue-body" class="segue-body">Activa el modo SEGUE para usar la checklist manual.</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+    <script src="/frontend-assets/student.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+﻿{
+  "id": "jorge_62_dolor_pecho",
+  "name": "Jorge",
+  "age": 62,
+  "region": "C\u00f3rdoba",
+  "administrative": {
+    "full_name": "Jorge D\u00edaz",
+    "date_of_birth": "1963-01-20",
+    "dni": "14.987.654",
+    "insurance": "PAMI",
+    "sex": "Masculino",
+    "occupation": "Jubilado"
+  },
+  "triage": {
+    "reference_short": "Dolor de pecho"
+  },
+  "institutional_history": {
+    "diagnoses": [
+      "Hipertensi\u00f3n arterial"
+    ],
+    "surgeries": [
+      "Apendicectom\u00eda (juventud)"
+    ],
+    "allergies": [],
+    "medications_current": [
+      "Enalapril (a veces se olvida)"
+    ]
+  },
+  "recent_studies": {
+    "labs": [],
+    "imaging": [],
+    "notes": []
+  },
+  "chief_complaint": "Doctor, me agarra como una presi\u00f3n en el pecho desde hace un rato y me asust\u00e9.",
+  "what_they_feel": "Siento una opresi\u00f3n en el centro del pecho y me falta un poco el aire. Estoy transpirado y preocupado.",
+  "symptoms_reported": [
+    "Dolor/opresi\u00f3n en el pecho (inicio hace ~45 minutos)",
+    "Sudoraci\u00f3n",
+    "Falta de aire leve",
+    "Dolor que a veces se va al brazo izquierdo"
+  ],
+  "known_medical_history": {
+    "enfermedades_previas": "Hipertensi\u00f3n (dice que 'a veces la tiene alta').",
+    "medicacion_habitual": "Toma enalapril, pero a veces se olvida.",
+    "alergias": "Niega.",
+    "antecedentes_familiares": "Padre con infarto a los 60 y pico.",
+    "habitos": "Ex fumador (dej\u00f3 hace 5 a\u00f1os).",
+    "cirugias": "Apendicectom\u00eda de joven."
+  },
+  "unknown_real_problem": "S\u00edndrome coronario agudo (posible infarto). El paciente NO lo sabe.",
+  "doctor_display_real_problem": "S\u00edndrome coronario agudo (dolor tor\u00e1cico t\u00edpico)",
+  "true_case": {
+    "diagnostico_principal": "S\u00edndrome coronario agudo (SCA)",
+    "diferenciales": [
+      "Angina inestable",
+      "Reflujo gastroesof\u00e1gico / espasmo esof\u00e1gico",
+      "Embolia pulmonar",
+      "Pericarditis",
+      "Dolor osteomuscular (costocondritis)"
+    ],
+    "indicaciones_plan": "Emergencia: monitorizaci\u00f3n, ECG inmediato y seriado, troponinas seriadas y laboratorio. Manejo como SCA hasta descartar: evaluaci\u00f3n de riesgo, ox\u00edgeno si hipoxemia, analgesia y antiagregaci\u00f3n/anticoagulaci\u00f3n seg\u00fan protocolo institucional. Preparar derivaci\u00f3n/activaci\u00f3n de hemodinamia si hay criterios (p. ej., STEMI). Indicaciones de reposo, acceso venoso, control de PA y tratamiento de HTA seg\u00fan necesidad.",
+    "receta": "No corresponde receta ambulatoria: requiere manejo intrahospitalario/guardia. Al alta (si aplica), plan de prevenci\u00f3n secundaria seg\u00fan cardiolog\u00eda."
+  },
+  "personality": "Ansioso/a",
+  "language_level": "B",
+  "medical_history_recall": "High",
+  "cognitive_confusion": "Normal",
+  "speaking_style": "cordobes_sutil"
+}

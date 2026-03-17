@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedSim - ABM Alumnos</title>
+  <link rel="stylesheet" href="/frontend-assets/styles.css" />
+  <style>
+    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
+    .app-header { position:relative; display:flex; justify-content:center; align-items:center; padding: 20px 12px 10px; }
+    .app-title { font-size: 32px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
+    .back-link { position:absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+    .wrap { width:min(1200px, 98vw); margin: 0 auto 18px; }
+
+    .eval-card { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15,23,42,0.06); }
+    .eval-head { padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.06); display:flex; gap:10px; align-items:center; justify-content:space-between; }
+    .eval-body { padding: 14px; }
+    .eval-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .eval-input { border: 1px solid rgba(15,23,42,0.14); border-radius: 12px; padding: 10px 12px; background: #fff; }
+    .eval-btn { border: 1px solid rgba(15,23,42,0.14); background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 800; color: #0f172a; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+    .eval-btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
+    .eval-btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
+    .eval-btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
+    .eval-btn.danger { background:#b42318; border-color:#b42318; color:#fff; }
+    .eval-btn.danger:hover { background:#9f1f16; border-color:#9f1f16; }
+    .eval-small { font-size: 12px; opacity: .85; color:#475569; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .hint { font-size:12px; color:#64748b; }
+
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-top:1px solid rgba(15,23,42,0.10); padding:10px 8px; font-size: 13px; vertical-align: top; }
+    th { font-size: 12px; color:#334155; text-align:left; }
+
+    .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; }
+    .modal { position: fixed; top: 18vh; left:50%; transform: translateX(-50%); width:min(720px, 94vw); background:#fff; border-radius: 14px; border:1px solid #ddd; display:none; }
+    .modal .eval-body { max-height: 70vh; overflow:auto; }
+    .form-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <a class="eval-btn back-link" href="/frontend/evaluator">&lt; Volver</a>
+    <div class="app-title">MedSim</div>
+  </header>
+
+  <div class="wrap">
+    <div class="eval-row" style="justify-content:flex-start; margin-bottom:12px;">
+      <div class="eval-small">ABM Alumnos</div>
+    </div>
+
+    <section class="eval-card">
+      <div class="eval-head">
+        <div>
+          <div style="font-weight:900;">Alumnos</div>
+          <div class="eval-small" id="list-status"></div>
+        </div>
+        <div class="eval-row">
+          <button id="btn-refresh" class="eval-btn" type="button">Reload</button>
+          <button id="btn-new" class="eval-btn primary" type="button">Nuevo</button>
+        </div>
+      </div>
+      <div class="eval-body" style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>DNI</th>
+              <th>Nombre</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="student-rows">
+            <tr><td colspan="3" class="eval-small">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <div class="modal" id="modal-student">
+    <div class="eval-head">
+      <div style="font-weight:900;">Alumno</div>
+      <div class="eval-row">
+        <button id="btn-delete" class="eval-btn danger" type="button">Eliminar</button>
+        <button id="btn-save" class="eval-btn primary" type="button">Guardar</button>
+        <button class="eval-btn" data-close type="button">Cerrar</button>
+      </div>
+    </div>
+    <div class="eval-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="s-id">DNI</label>
+          <input id="s-id" class="eval-input mono" inputmode="numeric" placeholder="DNI (solo numeros)" />
+          <small class="hint">Se usa como ID y nombre del archivo JSON.</small>
+        </div>
+        <div class="form-group">
+          <label for="s-name">Nombre completo</label>
+          <input id="s-name" class="eval-input" placeholder="Nombre y apellido" />
+        </div>
+      </div>
+      <div id="form-status" class="eval-small" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <script src="/frontend-assets/students.js"></script>
+</body>
+</html>

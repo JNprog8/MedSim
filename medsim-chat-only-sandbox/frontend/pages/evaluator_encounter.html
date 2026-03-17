@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedSim - Evaluación</title>
+  <link rel="stylesheet" href="/frontend-assets/styles.css" />
+  <style>
+    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
+    .app-header { position:relative; display:flex; justify-content:center; align-items:center; padding: 20px 12px 10px; }
+    .app-title { font-size: 32px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
+    .back-link { position:absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+
+    .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width:min(1500px, 99vw); margin: 0 auto 18px; }
+    .eval-card { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15,23,42,0.06); height: 78vh; display:flex; flex-direction:column; }
+    .eval-head { padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.06); display:flex; gap:10px; align-items:center; justify-content:space-between; }
+    .eval-body { padding: 14px; flex: 1; overflow:auto; }
+    .eval-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .eval-btn { border: 1px solid rgba(15,23,42,0.14); background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; color: #0f172a; }
+    .eval-btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
+    .eval-btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
+    .eval-btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
+    .eval-btn.danger { background:#b42318; border-color:#b42318; color:#fff; }
+    .eval-btn.danger:hover { background:#9f1f16; border-color:#9f1f16; }
+    .eval-small { font-size: 12px; opacity: .8; }
+
+    .transcript { overflow:auto; padding: 12px; background: #fafafa; flex: 1; }
+    .tmsg { background:#fff; border: 1px solid rgba(15,23,42,0.10); border-radius: 14px; padding: 12px 12px; margin-bottom: 10px; }
+    .tmsg.user { background: rgba(2,132,199,0.06); border-color: rgba(2,132,199,0.18); }
+    .tmeta { font-size: 12px; opacity: .7; margin-bottom: 6px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    table.eval-table { width:100%; border-collapse: collapse; }
+    table.eval-table th, table.eval-table td { border:1px solid rgba(15,23,42,0.12); padding:8px; vertical-align: top; font-size: 12px; }
+    .radio-row { display:flex; gap:10px; justify-content:center; align-items:center; }
+    .obs-textarea { width: 100%; min-height: 62px; resize: vertical; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+    .topbar { width:min(1500px, 99vw); margin: 0 auto 10px; display:flex; justify-content:flex-start; }
+
+    @media (max-width: 1100px) {
+      .eval-grid { grid-template-columns: 1fr; }
+      .eval-card { height:auto; }
+      .eval-body { max-height: 52vh; }
+      .transcript { max-height: 52vh; }
+      .topbar { justify-content:flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <button id="btn-back" class="eval-btn back-link" type="button">&lt; Atrás</button>
+      <div class="app-title">MedSim</div>
+    </header>
+
+    <main class="eval-grid">
+      <section class="eval-card">
+        <div class="eval-head">
+          <div>
+            <div style="font-weight:800;">Conversación</div>
+            <div class="eval-small" id="status"></div>
+          </div>
+          <div class="eval-row" style="justify-content:flex-end;">
+            <button id="btn-open-student" class="eval-btn" type="button">Abrir link</button>
+            <button id="btn-finish" class="eval-btn danger" type="button" disabled>Finalizar conversación</button>
+            <button id="btn-activate" class="eval-btn primary" type="button">Activar conversación</button>
+          </div>
+        </div>
+        <div class="transcript" id="transcript"></div>
+      </section>
+
+      <aside class="eval-card">
+        <div class="eval-head">
+          <div>
+            <div style="font-weight:800;">Plantilla SEGUE</div>
+            <div class="eval-small">Si(1) / No(0) / NC + Observaciones</div>
+          </div>
+        </div>
+        <div class="eval-body">
+          <div class="eval-row" style="margin-bottom:10px;">
+            <div style="flex:1;">
+              <div class="eval-small">Estudiante</div>
+              <div id="hdr-student"></div>
+            </div>
+            <div style="width:160px;">
+              <div class="eval-small">ID</div>
+              <div id="hdr-student-id"></div>
+            </div>
+            <div style="flex:1;">
+              <div class="eval-small">Evaluador/a</div>
+              <div id="hdr-evaluator"></div>
+            </div>
+          </div>
+          <div id="segue-table-wrap" class="eval-small">Cargando planilla...</div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="/frontend-assets/evaluator_encounter.js"></script>
+</body>
+</html>

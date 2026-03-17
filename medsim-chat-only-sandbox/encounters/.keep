@@ -1,0 +1,3 @@
+# This file keeps the `encounters/` folder in version control.
+# The app persists each conversation as `encounters/<encounter_id>.json`.
+

@@ -1,0 +1,45 @@
+{
+  "id": "443",
+  "name": "Roberto",
+  "age": 54,
+  "region": "Conurbano Bonaerense / Gran Buenos Aires, Argentina.",
+  "administrative": {
+    "full_name": "Roberto Garcia",
+    "date_of_birth": null,
+    "dni": null,
+    "insurance": null,
+    "sex": null,
+    "occupation": null
+  },
+  "triage": {
+    "reference_short": "\"Doctor, vengo porque hace unas semanas que no me siento bien. Me cans"
+  },
+  "institutional_history": {
+    "diagnoses": [],
+    "surgeries": [],
+    "allergies": [],
+    "medications_current": []
+  },
+  "recent_studies": {
+    "labs": [],
+    "imaging": [],
+    "notes": []
+  },
+  "chief_complaint": "\"Doctor, vengo porque hace unas semanas que no me siento bien. Me canso de la nada y tengo un ardor en el pecho que no se me va con el bicarbonato. Mi señora me tiene harto con que venga, así que acá estoy para que me firme algo y me pueda ir tranquilo.\"",
+  "what_they_feel": "Se siente vulnerable pero intenta proyectar una imagen de \"hombre fuerte\". Siente una opresión que describe como \"un nudo\" o \"fuego que sube\", y está secretamente asustado de que sea algo del corazón, aunque lo niega.",
+  "symptoms_reported": [
+    "Disnea (falta de aire) ante esfuerzos moderados.",
+    "Dolor retroesternal (detrás del esternón) opresivo.",
+    "Sudoración fría ocasional.",
+    "Fatiga persistente al terminar su jornada laboral."
+  ],
+  "known_medical_history": {},
+  "unknown_real_problem": "agravada por tabaquismo crónico y estrés. El paciente oculta que el dolor aparece específicamente cuando hace fuerza (cargar bultos) porque teme que si le diagnostican algo cardíaco, le quiten la licencia profesional de conducir (su único sustento).",
+  "doctor_display_real_problem": "Él intenta desviar la atención del médico hacia un problema gástrico (\"debe ser la comida de la ruta\") para evitar estudios del corazón.",
+  "true_case": null,
+  "personality": "Directo",
+  "language_level": "B",
+  "medical_history_recall": "Moderate",
+  "cognitive_confusion": "Normal",
+  "speaking_style": "rioplatense"
+}

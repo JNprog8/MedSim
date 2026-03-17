@@ -1,0 +1,45 @@
+{
+  "id": "valentina_26_dolor_fosa_iliaca",
+  "name": "Valentina",
+  "age": 26,
+  "region": "Cuyo (Mendoza)",
+  "administrative": {
+    "full_name": "Valentina Fernández",
+    "date_of_birth": null,
+    "dni": null,
+    "insurance": null,
+    "sex": null,
+    "occupation": null
+  },
+  "triage": {
+    "reference_short": "Hola, doc. Me empezó un dolor fuerte en la panza del lado derecho y no"
+  },
+  "institutional_history": {
+    "diagnoses": [],
+    "surgeries": [],
+    "allergies": [],
+    "medications_current": []
+  },
+  "recent_studies": {
+    "labs": [],
+    "imaging": [],
+    "notes": []
+  },
+  "chief_complaint": "Hola, doc. Me empezó un dolor fuerte en la panza del lado derecho y no se me pasa.",
+  "what_they_feel": "Me duele como puntadas, me cuesta caminar derecha y me da náuseas. Estoy incómoda y medio asustada.",
+  "symptoms_reported": [
+    "Dolor abdominal en cuadrante inferior derecho (empezó hace ~10 horas)",
+    "Náuseas",
+    "Menos apetito",
+    "Empeora al moverse"
+  ],
+  "known_medical_history": {},
+  "unknown_real_problem": "Apendicitis aguda. La paciente NO lo sabe.",
+  "doctor_display_real_problem": "Sospecha de apendicitis aguda",
+  "true_case": null,
+  "personality": "Neutral",
+  "language_level": "C",
+  "medical_history_recall": "High",
+  "cognitive_confusion": "Normal",
+  "speaking_style": "rioplatense"
+}
