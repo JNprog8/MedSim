@@ -1,0 +1,50 @@
+services:
+  # Base de Datos MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: medsim-db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-secret}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - medsim-network
+
+  # Backend FastAPI
+  backend:
+    build: .
+    container_name: medsim-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URL=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-secret}@mongodb:27017/medsim?authSource=admin
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - PATIENTS_DIR=/app/patients
+      - STUDENTS_DIR=/app/students
+      - EVALUATIONS_DIR=/app/evaluations
+      - ENCOUNTERS_DIR=/app/encounters
+      - AUDIO_DIR=/app/audio
+    depends_on:
+      - mongodb
+    volumes:
+      - ./storage/patients:/app/patients
+      - ./storage/students:/app/students
+      - ./storage/evaluations:/app/evaluations
+      - ./storage/encounters:/app/encounters
+      - ./storage/audio:/app/audio
+    networks:
+      - medsim-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  mongodb_data:
+
+networks:
+  medsim-network:
+    driver: bridge
