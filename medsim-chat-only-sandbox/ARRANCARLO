@@ -1,12 +1,17 @@
 ﻿EN POWERSHELL:
 
-cd C:\Users\Maxi\PycharmProjects\MedSim\MedSim\medsim-chat-only-sandbox
+cd C:\Users\Maxi\Desktop\MedSim\medsim-chat-only-sandbox
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001
 
 Si 8001 esta ocupado:
 
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8002
 
+IMPORTANTE:
+
+
+- Configura LLM/STT/TTS desde `.env` o desde la UI (sidebar).
+- Si usas `.env`, copia `.env.example` a `.env` y reemplaza las keys.
 
 Ejemplos (sin keys):
 
