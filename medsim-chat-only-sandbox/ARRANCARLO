@@ -7,10 +7,6 @@ Si 8001 esta ocupado:
 
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8002
 
-IMPORTANTE:
-
-
-- Configura LLM/STT/TTS desde la UI (sidebar) o via variables de entorno.
 
 Ejemplos (sin keys):
 
