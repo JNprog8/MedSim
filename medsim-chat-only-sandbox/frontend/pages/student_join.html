@@ -1,82 +1,117 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MedSim - Unirse a conversación</title>
-  <link rel="stylesheet" href="/frontend-assets/styles.css" />
-  <style>
-    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
-    .app-header { position:relative; display:flex; justify-content:center; align-items:center; padding: 20px 12px 10px; }
-    .app-title { font-size: 32px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
-    .back-link { position:absolute; left: 12px; top: 50%; transform: translateY(-50%); }
-    .wrap { width:min(1500px, 99vw); margin: 0 auto 18px; }
-
-    .eval-card { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15,23,42,0.06); }
-    .eval-head { padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.06); display:flex; gap:10px; align-items:center; justify-content:space-between; }
-    .eval-body { padding: 14px; }
-    .eval-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-    .eval-input, .eval-select, .eval-textarea { border: 1px solid rgba(15,23,42,0.14); border-radius: 12px; padding: 10px 12px; background: #fff; }
-    .eval-textarea { width:100%; min-height: 66px; }
-    .eval-btn { border: 1px solid rgba(15,23,42,0.14); background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 800; color: #0f172a; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
-    .eval-btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
-    .eval-btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
-    .eval-btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
-    .eval-small { font-size: 12px; opacity: .85; color:#475569; }
-
-    .form-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-    .form-group { display:flex; flex-direction:column; gap:4px; }
-    .hint { font-size:12px; color:#64748b; }
-
-    table { width:100%; border-collapse: collapse; }
-    th, td { border-top:1px solid rgba(15,23,42,0.10); padding:10px 8px; font-size: 13px; vertical-align: top; }
-    th { font-size: 12px; color:#334155; text-align:left; }
-    .chip { display:inline-flex; align-items:center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; border: 1px solid rgba(15,23,42,0.10); background: rgba(148,163,184,0.18); color:#0f172a; }
-    .chip.ok { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.25); }
-    .chip.warn { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.25); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  </style>
-</head>
-<body>
-  <header class="app-header">
-    <a class="eval-btn back-link" href="/frontend/index">&lt; Volver</a>
-    <div class="app-title">MedSim</div>
-  </header>
-
-  <div class="wrap">
-    <div class="eval-row" style="justify-content:flex-start; margin-bottom:12px;">
-      <div class="eval-small">Estudiante: unirse a una conversación</div>
-    </div>
-
-    <section class="eval-card">
-      <div class="eval-head">
-        <div>
-          <div style="font-weight:900;">Conversaciones disponibles</div>
-          <div class="eval-small">Elegí una conversación para entrar. Se abre en esta misma ventana.</div>
+<!DOCTYPE html>
+<html class="light" lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <title>MedSim - Unirse a conversación</title>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface-variant": "#40484c",
+              "primary-fixed-dim": "#97ceeb",
+              "surface-container-high": "#e6e8ea",
+              "surface-container-low": "#f2f4f6",
+              "surface-container-lowest": "#ffffff",
+              "secondary-container": "#7df5f6",
+              "on-secondary-container": "#007071",
+              "primary": "#00374b",
+              "secondary": "#006a6a",
+              "surface": "#f7f9fb"
+            },
+            fontFamily: {
+              headline: ["Manrope"],
+              body: ["Inter"]
+            }
+          }
+        }
+      };
+    </script>
+    <style>
+      .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+      .pulse-ring { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } }
+    </style>
+  </head>
+  <body class="bg-surface font-body text-slate-900 min-h-screen flex flex-col">
+    <header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_12px_32px_rgba(11,79,104,0.08)]">
+      <div class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto relative">
+        <div class="flex items-center gap-4">
+          <a id="btn-back-wait" href="/frontend/index" class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 duration-200 text-cyan-900 dark:text-cyan-100" aria-label="Volver">
+            <span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+          </a>
+          <h1 class="text-xl font-headline tracking-tight font-bold text-cyan-900 dark:text-cyan-100">MedSim</h1>
         </div>
-        <button id="btn-reload" class="eval-btn" type="button">Reload</button>
+        <div class="w-10 h-10"></div>
+        <div class="bg-slate-100/50 dark:bg-slate-800/50 h-[1px] w-full absolute bottom-0 left-0"></div>
       </div>
-      <div class="eval-body" style="overflow:auto;">
-        <div id="table-status" class="eval-small" style="margin-bottom:8px;"></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Alumno</th>
-              <th>Paciente</th>
-              <th>Profesor</th>
-              <th>Estado</th>
-              <th>encounter_id</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="conv-rows">
-            <tr><td colspan="6" class="eval-small">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
+    </header>
 
-  <script src="/frontend-assets/student_join.js"></script>
-</body>
+    <main id="wait-card" class="flex-grow flex items-center justify-center px-6 pt-24 pb-12 relative overflow-hidden">
+      <div class="absolute top-1/4 right-[-5%] w-96 h-96 bg-secondary-container/20 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 left-[-5%] w-80 h-80 bg-primary-fixed-dim/20 rounded-full blur-3xl"></div>
+      <div class="max-w-xl w-full flex flex-col items-center gap-12 relative z-10">
+        <div class="w-full bg-surface-container-lowest rounded-[1rem] p-10 shadow-[0_12px_32px_rgba(11,79,104,0.08)] relative overflow-hidden">
+          <div class="flex flex-col items-center text-center space-y-8 relative">
+            <div class="relative flex items-center justify-center">
+              <div class="w-24 h-24 rounded-full border-4 border-surface-container-high border-t-secondary animate-spin"></div>
+              <div class="absolute w-16 h-16 rounded-full bg-secondary/5 flex items-center justify-center pulse-ring">
+                <span class="material-symbols-outlined text-secondary text-3xl" data-icon="clinical_notes">clinical_notes</span>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <h2 id="wait-status" class="text-2xl font-headline font-bold text-primary tracking-tight">Esperando conversación activa...</h2>
+              <p class="text-on-surface-variant text-base leading-relaxed max-w-sm mx-auto">Cuando el evaluador inicie la sesión, entrarás automáticamente.</p>
+              <p id="wait-meta" class="text-[12px] text-slate-500"></p>
+              <p class="text-[12px] text-slate-500">Session ID: <span id="session-id"></span></p>
+            </div>
+            <a id="btn-show-browse" href="/frontend/student_join?browse=1" class="group w-full md:w-auto px-8 py-4 bg-secondary-container text-on-secondary-container font-headline font-bold rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center justify-center gap-3">
+              Ver todas las conversaciones disponibles
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <main id="browse-card" class="hidden flex-grow px-6 pt-24 pb-12">
+      <div class="max-w-5xl mx-auto w-full">
+        <div class="flex items-end justify-between gap-4 mb-5">
+          <div>
+            <h2 class="text-2xl font-headline font-bold text-primary tracking-tight">Conversaciones disponibles</h2>
+            <p class="text-on-surface-variant text-sm">Elegí una conversación para entrar.</p>
+          </div>
+          <button id="btn-reload" type="button" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-headline font-semibold hover:bg-slate-50 transition-colors">Recargar</button>
+        </div>
+        <div class="bg-surface-container-lowest rounded-[1rem] shadow-[0_12px_32px_rgba(11,79,104,0.08)] overflow-hidden">
+          <div class="px-6 py-4 border-b border-surface-container-high">
+            <p id="table-status" class="text-sm text-on-surface-variant"></p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left">
+              <thead class="bg-surface-container-low text-[11px] uppercase tracking-widest text-on-surface-variant">
+                <tr>
+                  <th class="px-4 py-3">Alumno</th>
+                  <th class="px-4 py-3">Paciente</th>
+                  <th class="px-4 py-3">Profesor</th>
+                  <th class="px-4 py-3">Estado</th>
+                  <th class="px-4 py-3">encounter_id</th>
+                  <th class="px-4 py-3 text-right"></th>
+                </tr>
+              </thead>
+              <tbody id="conv-rows">
+                <tr><td colspan="6" class="px-4 py-6 text-on-surface-variant">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="/frontend-assets/student_join.js"></script>
+  </body>
 </html>

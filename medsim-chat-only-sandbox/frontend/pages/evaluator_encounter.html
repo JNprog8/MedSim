@@ -1,101 +1,93 @@
-<!doctype html>
-<html lang="es">
+<!DOCTYPE html>
+<html class="light" lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MedSim - Evaluación</title>
-  <link rel="stylesheet" href="/frontend-assets/styles.css" />
-  <style>
-    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
-    .app-header { position:relative; display:flex; justify-content:center; align-items:center; padding: 20px 12px 10px; }
-    .app-title { font-size: 32px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
-    .back-link { position:absolute; left: 12px; top: 50%; transform: translateY(-50%); }
-
-    .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width:min(1500px, 99vw); margin: 0 auto 18px; }
-    .eval-card { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15,23,42,0.06); height: 78vh; display:flex; flex-direction:column; }
-    .eval-head { padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.06); display:flex; gap:10px; align-items:center; justify-content:space-between; }
-    .eval-body { padding: 14px; flex: 1; overflow:auto; }
-    .eval-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .eval-btn { border: 1px solid rgba(15,23,42,0.14); background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 700; color: #0f172a; }
-    .eval-btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
-    .eval-btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
-    .eval-btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
-    .eval-btn.danger { background:#b42318; border-color:#b42318; color:#fff; }
-    .eval-btn.danger:hover { background:#9f1f16; border-color:#9f1f16; }
-    .eval-small { font-size: 12px; opacity: .8; }
-
-    .transcript { overflow:auto; padding: 12px; background: #fafafa; flex: 1; }
-    .tmsg { background:#fff; border: 1px solid rgba(15,23,42,0.10); border-radius: 14px; padding: 12px 12px; margin-bottom: 10px; }
-    .tmsg.user { background: rgba(2,132,199,0.06); border-color: rgba(2,132,199,0.18); }
-    .tmeta { font-size: 12px; opacity: .7; margin-bottom: 6px; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    table.eval-table { width:100%; border-collapse: collapse; }
-    table.eval-table th, table.eval-table td { border:1px solid rgba(15,23,42,0.12); padding:8px; vertical-align: top; font-size: 12px; }
-    .radio-row { display:flex; gap:10px; justify-content:center; align-items:center; }
-    .obs-textarea { width: 100%; min-height: 62px; resize: vertical; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-
-    .topbar { width:min(1500px, 99vw); margin: 0 auto 10px; display:flex; justify-content:flex-start; }
-
-    @media (max-width: 1100px) {
-      .eval-grid { grid-template-columns: 1fr; }
-      .eval-card { height:auto; }
-      .eval-body { max-height: 52vh; }
-      .transcript { max-height: 52vh; }
-      .topbar { justify-content:flex-start; }
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedSim - Evaluación de Encuentro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d9488",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "slate-custom": {
+                            50: "#f8fafc",
+                            100: "#f1f5f9",
+                            200: "#e2e8f0",
+                            300: "#cbd5e1",
+                            400: "#94a3b8",
+                            500: "#64748b",
+                            600: "#475569",
+                            700: "#334155",
+                            800: "#1e293b",
+                            900: "#0f172a",
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
 </head>
-<body>
-  <div class="app">
-    <header class="app-header">
-      <button id="btn-back" class="eval-btn back-link" type="button">&lt; Atrás</button>
-      <div class="app-title">MedSim</div>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-custom-900 dark:text-slate-custom-100 antialiased">
+<div class="flex h-screen overflow-hidden">
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden pt-24">
+    <header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_12px_32px_rgba(11,79,104,0.08)]">
+      <div class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto relative">
+        <div class="flex items-center gap-4">
+          <button id="btn-back" class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 duration-200 text-cyan-900 dark:text-cyan-100" type="button" aria-label="Volver">
+            <span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+          </button>
+          <h1 class="text-xl font-bold tracking-tight text-cyan-900 dark:text-cyan-100">MedSim</h1>
+        </div>
+        <div class="w-10 h-10"></div>
+        <div class="bg-slate-100/50 dark:bg-slate-800/50 h-[1px] w-full absolute bottom-0 left-0"></div>
+      </div>
     </header>
-
-    <main class="eval-grid">
-      <section class="eval-card">
-        <div class="eval-head">
-          <div>
-            <div style="font-weight:800;">Conversación</div>
-            <div class="eval-small" id="status"></div>
-          </div>
-          <div class="eval-row" style="justify-content:flex-end;">
-            <button id="btn-open-student" class="eval-btn" type="button">Abrir link</button>
-            <button id="btn-finish" class="eval-btn danger" type="button" disabled>Finalizar conversación</button>
-            <button id="btn-activate" class="eval-btn primary" type="button">Activar conversación</button>
-          </div>
-        </div>
-        <div class="transcript" id="transcript"></div>
-      </section>
-
-      <aside class="eval-card">
-        <div class="eval-head">
-          <div>
-            <div style="font-weight:800;">Plantilla SEGUE</div>
-            <div class="eval-small">Si(1) / No(0) / NC + Observaciones</div>
-          </div>
-        </div>
-        <div class="eval-body">
-          <div class="eval-row" style="margin-bottom:10px;">
-            <div style="flex:1;">
-              <div class="eval-small">Estudiante</div>
-              <div id="hdr-student"></div>
+    <div class="flex-1 overflow-auto p-8">
+      <div class="grid grid-cols-2 gap-6 h-full">
+        <div class="bg-white dark:bg-slate-custom-900 rounded-xl border border-slate-custom-200 dark:border-slate-custom-800 shadow-sm overflow-hidden flex flex-col">
+          <div class="px-6 py-4 border-b border-slate-custom-200 dark:border-slate-custom-800 flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-custom-900 dark:text-white">Conversación</h3>
+              <p class="text-xs text-slate-custom-500 mt-1" id="status">Estado: Cargando...</p>
             </div>
-            <div style="width:160px;">
-              <div class="eval-small">ID</div>
-              <div id="hdr-student-id"></div>
-            </div>
-            <div style="flex:1;">
-              <div class="eval-small">Evaluador/a</div>
-              <div id="hdr-evaluator"></div>
+            <div class="flex items-center gap-2">
+              <button id="btn-open-student" class="px-3 py-1.5 text-xs font-semibold text-slate-custom-700 dark:text-slate-custom-200 border border-slate-custom-200 dark:border-slate-custom-700 rounded-lg hover:bg-slate-custom-50 dark:hover:bg-slate-custom-800 transition-colors"><span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">open_in_new</span><span>Abrir link</span></span></button>
+              <button id="btn-activate" class="px-3 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-teal-700 rounded-lg transition-colors"><span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">play_circle</span><span>Activar</span></span></button>
+              <button id="btn-finish" class="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">stop_circle</span><span>Finalizar</span></span></button>
             </div>
           </div>
-          <div id="segue-table-wrap" class="eval-small">Cargando planilla...</div>
+          <div id="transcript" class="flex-1 overflow-auto p-4 bg-slate-custom-50 dark:bg-slate-custom-800/30"></div>
         </div>
-      </aside>
-    </main>
-  </div>
-
-  <script src="/frontend-assets/evaluator_encounter.js"></script>
+        <div class="bg-white dark:bg-slate-custom-900 rounded-xl border border-slate-custom-200 dark:border-slate-custom-800 shadow-sm overflow-hidden flex flex-col">
+          <div class="px-6 py-4 border-b border-slate-custom-200 dark:border-slate-custom-800">
+            <h3 class="text-lg font-semibold text-slate-custom-900 dark:text-white">Plantilla SEGUE</h3>
+            <p class="text-xs text-slate-custom-500 mt-1">Si(1) / No(0) / NC + Observaciones</p>
+          </div>
+          <div class="flex-1 overflow-auto p-6">
+            <div id="segue-table-wrap" class="text-sm text-slate-custom-500">Cargando planilla...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/frontend-assets/evaluator_encounter.js"></script>
 </body>
 </html>

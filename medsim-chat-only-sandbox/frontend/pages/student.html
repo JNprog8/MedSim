@@ -5,6 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MedSim</title>
     <link rel="stylesheet" href="/frontend-assets/styles.css">
+    <style>
+        :root {
+            --student-primary: #0ea5a6;
+            --student-primary-hover: #0b8f90;
+            --student-text: #0f172a;
+            --student-muted: #475569;
+            --student-border: rgba(15, 23, 42, 0.10);
+            --student-surface: #ffffff;
+        }
+
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+            color: var(--student-text);
+        }
+
+        .app-header {
+            background: var(--student-surface);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            display: grid;
+            grid-template-columns: 40px 1fr 40px;
+        }
+
+        .app-title {
+            color: var(--student-primary);
+            letter-spacing: 0.2px;
+            justify-self: center;
+        }
+
+        .icon-button {
+            border-radius: 12px;
+            border-color: rgba(15, 23, 42, 0.10);
+        }
+
+        .sidebar-card {
+            border-radius: 16px;
+            border-color: rgba(15, 23, 42, 0.08);
+        }
+
+        .config-button {
+            background: var(--student-primary);
+        }
+
+        .config-button:hover {
+            background: var(--student-primary-hover);
+        }
+
+        .send-button {
+            background: var(--student-primary);
+        }
+
+        .send-button:hover {
+            background: var(--student-primary-hover);
+        }
+
+        .secondary-button,
+        .secondary-button:hover {
+            background: #0f172a;
+        }
+
+        .chat-container {
+            border-radius: 16px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        .clinical-card {
+            border-radius: 16px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        .clinical-title {
+            color: var(--student-text);
+        }
+
+        /* Remove legacy top bar (Paciente/Modo/Reload/Finalizar). */
+        #patient-bar {
+            display: none !important;
+        }
+
+        /* Hide config sidebar from UI (keys live in backend env). */
+        #sidebar,
+        #sidebar-overlay {
+            display: none !important;
+        }
+
+        /* Keep header title centered without showing the menu button. */
+        #menu-button {
+            visibility: hidden;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="app">
@@ -112,23 +205,8 @@
 
             <aside class="clinical-section" aria-label="Ficha clinica">
                 <div class="clinical-card">
-                    <div class="clinical-tabs" role="tablist" aria-label="Panel lateral">
-                        <button id="tab-clinical" class="clinical-tab active" type="button" role="tab" aria-selected="true">Ficha clinica</button>
-                        <button id="tab-segue" class="clinical-tab" type="button" role="tab" aria-selected="false">Camino SEGUE</button>
-                    </div>
-                    <div id="panel-clinical" class="clinical-tab-panel active" role="tabpanel">
-                        <div class="clinical-title">Ficha clinica</div>
-                        <div id="clinical-panel" class="clinical-panel">Elegi un paciente para ver sus datos clinicos.</div>
-                    </div>
-                    <div id="panel-segue" class="clinical-tab-panel" role="tabpanel" hidden>
-                        <div class="clinical-title">Camino SEGUE</div>
-                        <div id="segue-panel" class="segue-panel segue-panel-inactive">
-                            <div class="segue-header">
-                                <div class="segue-title">Checklist SEGUE</div>
-                            </div>
-                            <div id="segue-body" class="segue-body">Activa el modo SEGUE para usar la checklist manual.</div>
-                        </div>
-                    </div>
+                    <div class="clinical-title">Ficha clinica</div>
+                    <div id="clinical-panel" class="clinical-panel">Elegi un paciente para ver sus datos clinicos.</div>
                 </div>
             </aside>
         </main>

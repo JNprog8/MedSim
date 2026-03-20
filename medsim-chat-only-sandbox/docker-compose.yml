@@ -17,6 +17,8 @@
       - TTS_VOICE_ID=${TTS_VOICE_ID:-}
       - TTS_MODEL_ID=${TTS_MODEL_ID:-}
       - TTS_LANGUAGE=${TTS_LANGUAGE:-}
+      - TTS_SPEED=${TTS_SPEED:-}
+      - TTS_TEMPERATURE=${TTS_TEMPERATURE:-}
       - PATIENTS_DIR=/app/patients
       - STUDENTS_DIR=/app/students
       - EVALUATIONS_DIR=/app/evaluations

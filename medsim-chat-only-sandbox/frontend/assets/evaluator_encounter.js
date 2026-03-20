@@ -9,7 +9,7 @@
     { id: '7', area: 'Obtener informacion', label: 'Explora signos y sintomas, factores fisicos y fisiologicos' },
     { id: '8', area: 'Obtener informacion', label: 'Explora factores psicosociales, situacion familiar, relaciones y estres' },
     { id: '9', area: 'Obtener informacion', label: 'Indaga sobre tratamientos previos o historia del padecimiento' },
-    { id: '10', area: 'Obtener informacion', label: 'Indaga como los problemas de salud afectan la vida del paciente' },
+    { id: '10', area: 'Obtener informacion', label: 'Indaga como los problemas de salud afetam a vida do paciente' },
     { id: '11', area: 'Obtener informacion', label: 'Indaga estrategias de prevencion y problemas del estilo de vida' },
     { id: '12', area: 'Obtener informacion', label: 'Hace preguntas directas. Evita preguntas directivas o capciosas' },
     { id: '13', area: 'Obtener informacion', label: 'Da tiempo para que el paciente hable, no interrumpe' },
@@ -44,9 +44,8 @@
 
   const transcriptEl = document.getElementById('transcript');
   const segueWrap = document.getElementById('segue-table-wrap');
-  const hdrStudent = document.getElementById('hdr-student');
-  const hdrStudentId = document.getElementById('hdr-student-id');
-  const hdrEvaluator = document.getElementById('hdr-evaluator');
+  const convStudent = document.getElementById('conv-student');
+  const convEvaluator = document.getElementById('conv-evaluator');
 
   let encounterId = '';
   let encounterFinishedAt = null;
@@ -139,26 +138,33 @@
 
     const status = document.createElement('span');
     status.className = 'message-audio-status';
+
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'message-audio-replay';
 
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined message-audio-icon';
+
     const payload = ttsPayload || {};
     if (payload.audio_url) {
       status.textContent = 'Audio listo';
+      icon.textContent = 'volume_up';
       button.textContent = 'Reproducir';
       button.addEventListener('click', () => playAudioFromUrl(payload.audio_url, messageElement, false));
     } else if (payload.audio_base64) {
       status.textContent = 'Audio listo';
+      icon.textContent = 'volume_up';
       button.textContent = 'Reproducir';
       button.addEventListener('click', () => playAudioFromBase64(payload.audio_base64, payload.content_type, messageElement));
     } else {
       status.textContent = 'Sin audio';
+      icon.textContent = 'volume_off';
       button.textContent = 'Sin audio';
       button.disabled = true;
     }
 
-    meta.append(status, button);
+    meta.append(icon, status, button);
     messageElement.appendChild(meta);
   }
 
@@ -304,6 +310,10 @@
       return;
     }
 
+    const studentName = currentEvaluation.student_name || '';
+    const studentId = currentEvaluation.student_identifier || '';
+    const evaluatorName = currentEvaluation.evaluator_name || '';
+
     const valueById = new Map();
     const notesById = new Map();
     for (const it of (currentEvaluation.items || [])) {
@@ -340,6 +350,20 @@
     }).join('');
 
     segueWrap.innerHTML = `
+      <div class="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-slate-custom-200 dark:border-slate-custom-700">
+        <div>
+          <p class="text-xs text-slate-custom-500 uppercase font-semibold">Estudiante</p>
+          <p class="text-sm font-semibold text-slate-custom-900 dark:text-white mt-1">${escapeHtml(studentName)}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-custom-500 uppercase font-semibold">ID</p>
+          <p class="text-sm font-semibold text-slate-custom-900 dark:text-white mt-1">${escapeHtml(studentId)}</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-custom-500 uppercase font-semibold">Evaluador/a</p>
+          <p class="text-sm font-semibold text-slate-custom-900 dark:text-white mt-1">${escapeHtml(evaluatorName)}</p>
+        </div>
+      </div>
       <table class="eval-table">
         <thead>
           <tr>
@@ -382,9 +406,12 @@
     if (!resp.ok) return;
     const data = await resp.json().catch(() => ({}));
     currentEvaluation = data?.evaluation || buildEmptyEvaluation();
-    if (hdrStudent) hdrStudent.textContent = currentEvaluation.student_name || '';
-    if (hdrStudentId) hdrStudentId.textContent = currentEvaluation.student_identifier || '';
-    if (hdrEvaluator) hdrEvaluator.textContent = currentEvaluation.evaluator_name || '';
+    const studentName = currentEvaluation.student_name || '';
+    const evaluatorName = currentEvaluation.evaluator_name || '';
+
+    if (convStudent) convStudent.textContent = studentName;
+    if (convEvaluator) convEvaluator.textContent = evaluatorName;
+
     renderSegueTable();
   }
 
@@ -466,4 +493,3 @@
     });
   }
 })();
-

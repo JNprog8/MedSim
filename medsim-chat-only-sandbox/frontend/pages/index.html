@@ -1,56 +1,112 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MedSim</title>
-  <link rel="stylesheet" href="/frontend-assets/styles.css" />
-  <style>
-    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
-    .app-header { display:flex; justify-content:center; align-items:center; padding: 24px 12px 8px; }
-    .app-title { font-size: 40px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
-    .wrap { width:min(980px, 96vw); margin: 0 auto; padding: 22px 0 34px; }
+<!DOCTYPE html>
 
-    .card-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .card { background:#fff; border:1px solid rgba(15,23,42,0.10); border-radius: 18px; padding: 18px; box-shadow: 0 18px 54px rgba(15,23,42,0.08); }
-    .card h2 { margin:0 0 6px; font-size:18px; }
-    .card p { margin:0 0 14px; color:#475569; line-height:1.4; }
-
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; padding: 12px 14px; border-radius: 14px; border:1px solid rgba(15,23,42,0.14); background:#fff; font-weight:800; color:#0f172a; cursor:pointer; text-decoration:none; width:100%; }
-    .btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
-    .btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
-    .btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
-    .hint { margin-top: 14px; font-size: 12px; color:#64748b; text-align:center; }
-
-    @media (max-width: 900px) {
-      .card-grid { grid-template-columns: 1fr; }
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedSim </title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0b516a',
+            accent: '#f8fafc',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          borderRadius: {
+            'custom': '12px',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-styling">
+    body {
+      background-color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+    .card-hover {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    .logo-text {
+      letter-spacing: -0.025em;
     }
   </style>
 </head>
-<body>
-  <header class="app-header">
-    <div class="app-title">MedSim</div>
-  </header>
-
-  <main class="wrap">
-    <div class="card-grid">
-      <section class="card">
-        <h2>Evaluador/a</h2>
-        <p>Ver evaluaciones guardadas, abrir conversaciones y completar la plantilla SEGUE.</p>
-        <a class="btn primary" href="/frontend/evaluator">Entrar como evaluador/a</a>
-      </section>
-
-      <section class="card">
-        <h2>Estudiante</h2>
-        <p>Unirse a una conversación existente con <span style="font-weight:700;">session_id</span> y <span style="font-weight:700;">encounter_id</span>, o elegir de una lista.</p>
-        <a class="btn" href="/frontend/student_join">Entrar como estudiante</a>
-      </section>
-    </div>
-
-    <div class="hint">
-      Si estás probando desde otra computadora, asegurate de abrir esta URL desde el servidor que corre MedSim.
-    </div>
-  </main>
-</body>
-</html>
-
+<body class="min-h-screen flex flex-col">
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50" data-purpose="navigation-header">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-center">
+<div class="flex items-center gap-2 text-center">
+<span class="text-2xl font-bold text-primary logo-text">MedSim</span>
+</div>
+</div>
+</header>
+<main class="flex-grow flex items-center justify-center py-12 px-4" data-purpose="portal-selection">
+<div class="max-w-5xl w-full">
+<div class="text-center mb-16">
+<h1 class="text-4xl font-extrabold text-slate-900 sm:text-5xl mb-4">
+          SimulaciÃ³n MÃ©dica Avanzada
+        </h1>
+<p class="text-lg text-slate-600 max-w-2xl mx-auto">
+          Plataforma integral para la evaluaciÃ³n y prÃ¡ctica de habilidades de comunicaciÃ³n clÃ­nicas en entornos controlados.
+        </p>
+</div>
+<div class="grid md:grid-cols-2 gap-8">
+<article class="bg-white p-8 rounded-custom shadow-sm border border-slate-200 card-hover flex flex-col h-full" data-purpose="evaluator-card">
+<div class="mb-6 inline-flex p-3 bg-blue-50 text-primary rounded-xl w-fit">
+<svg class="h-8 w-8" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h2 class="text-2xl font-bold text-slate-900 mb-4">Evaluador/a</h2>
+<p class="text-slate-600 mb-8 flex-grow leading-relaxed">
+            Ver evaluaciones guardadas, abrir conversaciones y completar la plantilla SEGUE para una retroalimentaciÃ³n detallada.
+          </p>
+<a href="/frontend/evaluator" class="w-full bg-primary text-white font-semibold py-4 px-6 rounded-custom hover:opacity-90 transition-opacity flex items-center justify-center gap-2 group text-center">
+            Entrar como evaluador/a
+            <svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M13 7l5 5m0 0l-5 5m5-5H6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</a>
+</article>
+<article class="bg-white p-8 rounded-custom shadow-sm border border-slate-200 card-hover flex flex-col h-full" data-purpose="student-card">
+<div class="mb-6 inline-flex p-3 bg-slate-50 text-slate-700 rounded-xl w-fit">
+<svg class="h-8 w-8" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+<path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h2 class="text-2xl font-bold text-slate-900 mb-4">Estudiante</h2>
+<p class="text-slate-600 mb-8 flex-grow leading-relaxed">
+            Unirse a una conversaciÃ³n existente.
+          </p>
+<a href="/frontend/student_join" class="w-full bg-white border-2 border-slate-200 text-slate-700 font-semibold py-4 px-6 rounded-custom hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 group text-center">
+            Entrar como estudiante
+            <svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M13 7l5 5m0 0l-5 5m5-5H6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</a>
+</article>
+</div>
+</div>
+</main>
+<footer class="py-8 bg-slate-50 border-t border-slate-200" data-purpose="site-footer">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col items-center gap-4">
+<p class="text-sm text-slate-500 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">        </p>
+<div class="text-slate-400 text-xs mt-4">
+          Â© 2026 MedSim Simulation Platform. Todos los derechos reservados.
+        </div>
+</div>
+</div>
+</footer>
+</body></html>

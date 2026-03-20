@@ -1,206 +1,116 @@
-<!doctype html>
-<html lang="es">
+<!DOCTYPE html>
+<html class="light" lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MedSim - ABM Pacientes</title>
-  <link rel="stylesheet" href="/frontend-assets/styles.css" />
-  <style>
-    body { background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%); color: #0f172a; }
-    .app-header { position:relative; display:flex; justify-content:center; align-items:center; padding: 20px 12px 10px; }
-    .app-title { font-size: 32px; font-weight: 900; letter-spacing: .2px; color: #0b4f68; }
-    .back-link { position:absolute; left: 12px; top: 50%; transform: translateY(-50%); }
-    .wrap { width:min(1500px, 99vw); margin: 0 auto 18px; }
-
-    .eval-card { background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15,23,42,0.06); }
-    .eval-head { padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, 0.06); display:flex; gap:10px; align-items:center; justify-content:space-between; }
-    .eval-body { padding: 14px; }
-    .eval-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .eval-input, .eval-select, .eval-textarea { border: 1px solid rgba(15,23,42,0.14); border-radius: 12px; padding: 10px 12px; background: #fff; }
-    .eval-textarea { width:100%; min-height: 110px; }
-    .eval-btn { border: 1px solid rgba(15,23,42,0.14); background: #fff; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 800; color: #0f172a; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
-    .eval-btn:hover { background: rgba(2, 132, 199, 0.06); border-color: rgba(2, 132, 199, 0.30); }
-    .eval-btn.primary { background:#0ea5a6; border-color:#0ea5a6; color:#fff; }
-    .eval-btn.primary:hover { background:#0b8f90; border-color:#0b8f90; }
-    .eval-btn.danger { background:#b42318; border-color:#b42318; color:#fff; }
-    .eval-btn.danger:hover { background:#9f1f16; border-color:#9f1f16; }
-    .eval-small { font-size: 12px; opacity: .85; color:#475569; }
-    .hint { font-size:12px; color:#64748b; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-    table { width:100%; border-collapse: collapse; }
-    th, td { border-top:1px solid rgba(15,23,42,0.10); padding:10px 8px; font-size: 13px; vertical-align: top; }
-    th { font-size: 12px; color:#334155; text-align:left; }
-
-    .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; }
-    .modal { position: fixed; top: 5vh; left:50%; transform: translateX(-50%); width:min(980px, 94vw); background:#fff; border-radius: 14px; border:1px solid #ddd; display:none; }
-    .modal .eval-body { max-height: 82vh; overflow:auto; }
-    .form-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-    .form-group { display:flex; flex-direction:column; gap:4px; }
-    .section-title { font-weight: 900; margin: 6px 0 8px; }
-  </style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedSim - Gestión de Pacientes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d9488",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "slate-custom": {
+                            50: "#f8fafc",
+                            100: "#f1f5f9",
+                            200: "#e2e8f0",
+                            300: "#cbd5e1",
+                            400: "#94a3b8",
+                            500: "#64748b",
+                            600: "#475569",
+                            700: "#334155",
+                            800: "#1e293b",
+                            900: "#0f172a",
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
 </head>
-<body>
-  <header class="app-header">
-    <a class="eval-btn back-link" href="/frontend/evaluator">&lt; Volver</a>
-    <div class="app-title">MedSim</div>
-  </header>
-
-  <div class="wrap">
-    <div class="eval-row" style="justify-content:flex-start; margin-bottom:12px;">
-      <div class="eval-small">ABM Pacientes</div>
-    </div>
-
-    <section class="eval-card">
-      <div class="eval-head">
-        <div>
-          <div style="font-weight:900;">Pacientes</div>
-          <div class="eval-small" id="list-status"></div>
-        </div>
-        <div class="eval-row">
-          <button id="btn-refresh" class="eval-btn" type="button">Reload</button>
-          <button id="btn-new" class="eval-btn primary" type="button">Nuevo</button>
-        </div>
-      </div>
-      <div class="eval-body" style="overflow:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Paciente</th>
-              <th>Región</th>
-              <th>Motivo</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="patient-rows">
-            <tr><td colspan="5" class="eval-small">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
-  <div class="modal-overlay" id="modal-overlay"></div>
-
-  <div class="modal" id="modal-patient">
-    <div class="eval-head">
-      <div style="font-weight:900;">Paciente</div>
-      <div class="eval-row">
-        <button id="btn-delete" class="eval-btn danger" type="button">Eliminar</button>
-        <button id="btn-save" class="eval-btn primary" type="button">Guardar</button>
-        <button class="eval-btn" data-close type="button">Cerrar</button>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-custom-900 dark:text-slate-custom-100 antialiased">
+<div class="flex h-screen overflow-hidden">
+  <aside class="w-64 flex-shrink-0 bg-slate-custom-900 dark:bg-black text-white flex flex-col border-r border-slate-custom-800">
+    <div class="p-6 flex items-center gap-3">
+      <div>
+        <h1 class="text-lg font-bold leading-none">MedSim</h1>
+        <p class="text-xs text-slate-custom-400 mt-1 uppercase tracking-wider font-semibold">Evaluator</p>
       </div>
     </div>
-    <div class="eval-body">
-      <div class="section-title">Identidad</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="p-id">ID</label>
-          <input id="p-id" class="eval-input mono" placeholder="p.ej. roberto_54" />
-          <small class="hint">Identificador del archivo JSON (sin espacios).</small>
-        </div>
-        <div class="form-group">
-          <label for="p-first">Nombre</label>
-          <input id="p-first" class="eval-input" placeholder="Nombre" />
-        </div>
-        <div class="form-group">
-          <label for="p-last">Apellido</label>
-          <input id="p-last" class="eval-input" placeholder="Apellido" />
-        </div>
-        <div class="form-group">
-          <label for="p-age">Edad</label>
-          <input id="p-age" class="eval-input" inputmode="numeric" placeholder="Edad" />
-        </div>
-        <div class="form-group">
-          <label for="p-region">Región</label>
-          <input id="p-region" class="eval-input" placeholder="AMBA" />
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:16px;">Contexto clínico</div>
-      <div class="form-grid">
-        <div class="form-group" style="grid-column: 1 / -1;">
-          <label for="p-chief">Motivo de consulta</label>
-          <input id="p-chief" class="eval-input" placeholder="Frase inicial del paciente..." />
-        </div>
-        <div class="form-group">
-          <label for="p-feel">¿Cómo se siente?</label>
-          <input id="p-feel" class="eval-input" placeholder="Ej: Me siento mareado..." />
-        </div>
-        <div class="form-group" style="grid-column: 1 / -1;">
-          <label for="p-symptoms">Síntomas (1 por línea)</label>
-          <textarea id="p-symptoms" class="eval-textarea" placeholder="- Dolor de cabeza\n- Mareos\n- Náuseas"></textarea>
-        </div>
-        <div class="form-group" style="grid-column: 1 / -1;">
-          <label for="p-secret">Problema real (secreto del caso)</label>
-          <textarea id="p-secret" class="eval-textarea" placeholder="Lo que el caso realmente tiene..."></textarea>
-        </div>
-        <div class="form-group" style="grid-column: 1 / -1;">
-          <label for="p-display">Diagnóstico/verdad visible al final</label>
-          <textarea id="p-display" class="eval-textarea" placeholder="Lo que se revela al finalizar..."></textarea>
-        </div>
-      </div>
-
-      <div class="section-title" style="margin-top:16px;">Perfil de respuesta</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="p-response-style">Conducta</label>
-          <select id="p-response-style" class="eval-select">
-            <option value="Calmado">Calmado</option>
-            <option value="Nervioso">Nervioso</option>
-            <option value="Confundido">Confundido</option>
-            <option value="Irritable">Irritable</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="p-personality">Personalidad</label>
-          <select id="p-personality" class="eval-select">
-            <option value="Neutral">Neutral</option>
-            <option value="Ansioso">Ansioso</option>
-            <option value="Colaborativo">Colaborativo</option>
-            <option value="Defensivo">Defensivo</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="p-language-level">Nivel de lenguaje</label>
-          <select id="p-language-level" class="eval-select">
-            <option value="A">A (simple)</option>
-            <option value="B">B (intermedio)</option>
-            <option value="C">C (técnico)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="p-memory-level">Recuerdo de historia clínica</label>
-          <select id="p-memory-level" class="eval-select">
-            <option value="Low">Bajo</option>
-            <option value="Medium">Medio</option>
-            <option value="High">Alto</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="p-cognitive">Confusión cognitiva</label>
-          <select id="p-cognitive" class="eval-select">
-            <option value="Normal">Normal</option>
-            <option value="Leve">Leve</option>
-            <option value="Moderada">Moderada</option>
-            <option value="Alta">Alta</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="p-speaking-style">Estilo de habla</label>
-          <select id="p-speaking-style" class="eval-select">
-            <option value="rioplatense">Rioplatense</option>
-            <option value="neutro">Neutro</option>
-            <option value="formal">Formal</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="form-status" class="eval-small" style="margin-top:12px;"></div>
+    <nav class="flex-1 px-4 py-4 space-y-1">
+      <a data-nav="dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-custom-400 hover:text-white hover:bg-slate-custom-800 transition-colors" href="/frontend/evaluator"><span class="material-symbols-outlined">dashboard</span><span class="text-sm font-medium">Dashboard</span></a>
+      <a data-nav="patients" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-custom-400 hover:text-white hover:bg-slate-custom-800 transition-colors" href="/frontend/patients"><span class="material-symbols-outlined">group</span><span class="text-sm font-medium">Pacientes</span></a>
+      <a data-nav="students" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-custom-400 hover:text-white hover:bg-slate-custom-800 transition-colors" href="/frontend/students"><span class="material-symbols-outlined">school</span><span class="text-sm font-medium">Alumnos</span></a>
+    </nav>
+    <div class="p-4 border-t border-slate-custom-800">
+      <a href="/frontend/index" class="flex items-center gap-3 p-3 rounded-xl bg-slate-custom-800/50 hover:bg-slate-custom-700 transition-colors"><span class="material-symbols-outlined text-3xl text-slate-custom-200">logout</span><span class="text-sm font-semibold text-slate-custom-200">Salir</span></a>
     </div>
-  </div>
-
-  <script src="/frontend-assets/patients.js"></script>
+  </aside>
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <header class="h-20 border-b border-slate-custom-200 dark:border-slate-custom-800 bg-white dark:bg-slate-custom-900 flex items-center justify-between px-8 shrink-0">
+      <div class="flex items-center gap-4">
+        <h2 class="text-3xl font-extrabold tracking-tight text-slate-custom-800 dark:text-white">Gestión de Pacientes</h2>
+        <span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide">Pacientes</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-custom-400 text-lg">search</span>
+          <input id="search-input" class="pl-10 pr-4 py-2 bg-slate-custom-100 dark:bg-slate-custom-800 border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-primary outline-none" placeholder="Buscar paciente..." type="text"/>
+        </div>
+        <button id="btn-new-patient" class="bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-md shadow-primary/10"><span class="material-symbols-outlined text-lg">add_circle</span><span>Nuevo Paciente</span></button>
+      </div>
+    </header>
+    <div class="flex-1 overflow-auto p-8">
+      <div class="bg-white dark:bg-slate-custom-900 rounded-xl border border-slate-custom-200 dark:border-slate-custom-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left border-separate border-spacing-0">
+            <thead>
+              <tr class="bg-slate-custom-50 dark:bg-slate-custom-800/50 border-b border-slate-custom-200 dark:border-slate-custom-800">
+                <th class="px-6 py-4 text-xs font-semibold text-slate-custom-500 uppercase tracking-wider">Nombre</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-custom-500 uppercase tracking-wider">Región</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-custom-500 uppercase tracking-wider">Motivo</th>
+                <th class="px-6 py-4 text-xs font-semibold text-slate-custom-500 uppercase tracking-wider text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="patient-table-body" class="bg-white dark:bg-slate-custom-900">
+              <tr class="hover:bg-slate-custom-50/50 dark:hover:bg-slate-custom-800/30 transition-colors"><td class="px-6 py-4 text-sm font-mono text-slate-custom-400" colspan="4">Cargando pacientes...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+(function () {
+  const path = window.location.pathname;
+  const mapping = {'/frontend/evaluator': 'dashboard','/evaluator': 'dashboard','/frontend/patients': 'patients','/patients': 'patients','/frontend/students': 'students','/students': 'students'};
+  const key = mapping[path];
+  if (key) {
+    const item = document.querySelector(`[data-nav="${key}"]`);
+    if (item) {
+      item.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+      item.classList.remove('text-slate-custom-400', 'hover:text-white', 'hover:bg-slate-custom-800');
+    }
+  }
+})();
+</script>
+<script src="/frontend-assets/patients.js"></script>
 </body>
 </html>

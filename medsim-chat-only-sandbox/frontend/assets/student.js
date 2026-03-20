@@ -146,40 +146,28 @@
     let speechRecognitionActive = false;
     let dictationSeedText = '';
 
-    // Patient selector container (near chat)
-    const patientContainer = document.createElement('div');
-    patientContainer.className = 'patient-row';
-    patientContainer.innerHTML = `
-        <label for="patient-select">Paciente:</label>
-        <select id="patient-select" class="model-select"></select>
-        <label for="interview-mode-select">Modo:</label>
-        <select id="interview-mode-select" class="mode-select">
-            <option value="free">Libre</option>
-            <option value="segue">SEGUE</option>
-        </select>
-        <button id="reload-patients" class="config-button" type="button">Reload</button>
-        <button id="finish-encounter" class="config-button finish-button" type="button">Finalizar</button>
-    `;
-    patientBar?.appendChild(patientContainer);
+    // Keep a hidden patient selector for internal state (no UI in student view).
+    const patientSelect = document.createElement('select');
+    patientSelect.id = 'patient-select';
+    patientSelect.hidden = true;
+    patientSelect.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(patientSelect);
 
-
-    // Get the elements after they're created
-    const patientSelect = document.getElementById('patient-select');
-    const interviewModeSelect = document.getElementById('interview-mode-select');
-    const reloadPatientsButton = document.getElementById('reload-patients');
-    const finishEncounterButton = document.getElementById('finish-encounter');
+    const interviewModeSelect = null;
+    const reloadPatientsButton = null;
+    const finishEncounterButton = null;
     const modelSelect = null;
     const apiUrlInput = document.getElementById('api-url');
     const saveConfigButton = document.getElementById('save-config');
     const apiStatusIndicator = document.getElementById('api-status');
     const llmUrlOptions = document.getElementById('llm-url-options');
-    const segueBody = document.getElementById('segue-body');
+    const segueBody = null;
 
     let chatLocked = false;
     let encounterClosed = false;
     let encounterWs = null;
     let lastProviderValue = llmProviderSelect?.value || 'custom';
-    let currentInterviewMode = localStorage.getItem(interviewModeKey) || 'free';
+    let currentInterviewMode = 'free';
     let currentSegueChecklist = [];
     const audioNotImplementedMessage = 'Audio no configurado';
 
@@ -380,16 +368,6 @@
             return;
         }
 
-        const header = document.createElement('div');
-        header.className = 'clinical-header';
-        header.textContent = `${patient.name} (${patient.age})${patient.region ? ` - ${patient.region}` : ''}`;
-        clinicalPanel.appendChild(header);
-
-        const hint = document.createElement('div');
-        hint.className = 'clinical-hint';
-        hint.textContent = 'La idea es descubrir sintomas/antecedentes conversando. Abrir secciones marcadas como "spoiler" te adelanta informacion.';
-        clinicalPanel.appendChild(hint);
-
         function addVisibleBlock(title, valueEl) {
             const block = document.createElement('div');
             block.className = 'clinical-visible';
@@ -517,84 +495,6 @@
             addVisibleBlock('Estudios recientes (sistema)', wrap);
         }
 
-        function makeSpoilerSection(title, contentEl) {
-            const details = document.createElement('details');
-            details.className = 'spoiler';
-
-            const summary = document.createElement('summary');
-            summary.className = 'spoiler-summary';
-            summary.textContent = title;
-            details.appendChild(summary);
-
-            const body = document.createElement('div');
-            body.className = 'spoiler-body';
-            body.appendChild(contentEl);
-            details.appendChild(body);
-
-            summary.addEventListener('click', (e) => {
-                if (details.open) return; // allow closing without warning
-                e.preventDefault();
-                const ok = window.confirm('Esta informacion esta pensada para descubrirla conversando con el paciente.\n\nQueres verla igual?');
-                if (ok) details.open = true;
-            });
-
-            return details;
-        }
-
-        const feels = patient.what_they_feel || '';
-        if (feels) {
-            const p = document.createElement('div');
-            p.className = 'clinical-block';
-            const t = document.createElement('div');
-            t.className = 'clinical-label';
-            t.textContent = 'Lo que siente';
-            const v = document.createElement('div');
-            v.textContent = feels;
-            p.appendChild(t);
-            p.appendChild(v);
-            clinicalPanel.appendChild(makeSpoilerSection('Lo que siente (spoiler)', p));
-        }
-
-        const symptoms = Array.isArray(patient.symptoms_reported) ? patient.symptoms_reported : [];
-        if (symptoms.length) {
-            const p = document.createElement('div');
-            p.className = 'clinical-block';
-            const t = document.createElement('div');
-            t.className = 'clinical-label';
-            t.textContent = 'Sintomas reportados';
-            const ul = document.createElement('ul');
-            ul.className = 'clinical-list';
-            for (const s of symptoms) {
-                const li = document.createElement('li');
-                li.textContent = s;
-                ul.appendChild(li);
-            }
-            p.appendChild(t);
-            p.appendChild(ul);
-            clinicalPanel.appendChild(makeSpoilerSection('Sintomas reportados (spoiler)', p));
-        }
-
-        const history = patient.known_medical_history && typeof patient.known_medical_history === 'object' ? patient.known_medical_history : null;
-        if (history) {
-            const p = document.createElement('div');
-            p.className = 'clinical-block';
-            const t = document.createElement('div');
-            t.className = 'clinical-label';
-            t.textContent = 'Antecedentes (lo que el paciente sabe)';
-            const dl = document.createElement('dl');
-            dl.className = 'clinical-dl';
-            for (const [k, v] of Object.entries(history)) {
-                const dt = document.createElement('dt');
-                dt.textContent = k.replace(/_/g, ' ');
-                const dd = document.createElement('dd');
-                dd.textContent = String(v);
-                dl.appendChild(dt);
-                dl.appendChild(dd);
-            }
-            p.appendChild(t);
-            p.appendChild(dl);
-            clinicalPanel.appendChild(makeSpoilerSection('Antecedentes (lo que el paciente dice) (spoiler)', p));
-        }
     }
 
     async function loadClinical(patientId) {
@@ -635,14 +535,6 @@
             connectEncounterWs(encounterFromUrl);
             await loadEncounterHistory(encounterFromUrl);
             const pid = (enc.patient_id || '').trim();
-            const m = (enc.mode || 'free').trim();
-            currentInterviewMode = m;
-            localStorage.setItem(interviewModeKey, currentInterviewMode);
-            if (interviewModeSelect) interviewModeSelect.value = currentInterviewMode;
-            updateSegueVisibility();
-            loadSegueChecklistState(true);
-            if (currentInterviewMode !== 'segue') setSegueInactive();
-            else { renderSegueFeedback(); setSideTab('segue'); }
             if (pid) {
                 if (patientSelect) {
                     patientSelect.value = pid;
@@ -666,8 +558,6 @@
         }
         if (!patientId) {
             currentEncounterId = null;
-            loadSegueChecklistState(true);
-            setSegueInactive();
             return;
         }
         setChatLocked(false);
@@ -682,17 +572,13 @@
             const data = await resp.json();
             currentEncounterId = data.encounter_id;
             connectEncounterWs(currentEncounterId);
-            loadSegueChecklistState(true);
             messagesContainer.innerHTML = '';
             statusDiv.textContent = 'Consulta iniciada';
-            renderSegueFeedback();
             setChatLocked(false);
         } catch (e) {
             console.error('Failed to start encounter:', e);
             currentEncounterId = null;
-            loadSegueChecklistState(true);
             statusDiv.textContent = 'Error iniciando consulta';
-            setSegueInactive('No se pudo iniciar la checklist SEGUE.');
             setChatLocked(false);
         }
     }
@@ -959,26 +845,23 @@
         setSideTab('segue');
     }
 
-    // Load saved API configuration
-    const savedApiKey = localStorage.getItem('llm_api_key') || localStorage.getItem('openai_api_key');
+    // Load saved API configuration (never persist secrets in the browser).
+    const savedApiKey = '';
     const savedApiUrl = localStorage.getItem('llm_api_url') || localStorage.getItem('openai_api_url');
-    if (savedApiKey) apiKeyInput.value = savedApiKey;
     if (savedApiUrl) apiUrlInput.value = savedApiUrl;
     const savedSttApiUrl = localStorage.getItem('stt_api_url');
-    const savedSttApiKey = localStorage.getItem('stt_api_key');
+    const savedSttApiKey = '';
     const savedSttModel = localStorage.getItem('stt_model') || localStorage.getItem('gemini_model');
     const savedTtsApiUrl = localStorage.getItem('tts_api_url');
-    const savedTtsApiKey = localStorage.getItem('tts_api_key') || localStorage.getItem('elevenlabs_api_key');
+    const savedTtsApiKey = '';
     const savedTtsVoiceId = localStorage.getItem('tts_voice_id') || localStorage.getItem('elevenlabs_voice_id');
     const savedTtsModelId = localStorage.getItem('tts_model_id') || localStorage.getItem('elevenlabs_model_id');
     const savedTtsLanguage = localStorage.getItem('tts_language') || 'es-AR';
     const savedTtsSpeed = localStorage.getItem('tts_speed') || '0.92';
     const savedTtsTemperature = localStorage.getItem('tts_temperature') || '0.35';
     if (savedSttApiUrl && sttApiUrlInput) sttApiUrlInput.value = savedSttApiUrl;
-    if (savedSttApiKey && sttApiKeyInput) sttApiKeyInput.value = savedSttApiKey;
     if (savedSttModel && sttModelInput) sttModelInput.value = savedSttModel;
     if (savedTtsApiUrl && ttsApiUrlInput) ttsApiUrlInput.value = savedTtsApiUrl;
-    if (savedTtsApiKey && ttsApiKeyInput) ttsApiKeyInput.value = savedTtsApiKey;
     if (savedTtsVoiceId && ttsVoiceIdInput) ttsVoiceIdInput.value = savedTtsVoiceId;
     if (savedTtsModelId && ttsModelIdInput) ttsModelIdInput.value = savedTtsModelId;
     if (ttsLanguageInput) ttsLanguageInput.value = savedTtsLanguage;
@@ -1225,7 +1108,6 @@
                 throw new Error(extractErrorMessage(detail, 'Failed to update audio configuration'));
             }
             localStorage.setItem('stt_api_url', values.sttApiUrl);
-            localStorage.setItem('stt_api_key', values.sttApiKey);
             localStorage.setItem('stt_model', values.sttModel);
             backendAudioState = {
                 ...(backendAudioState || {}),
@@ -1237,6 +1119,7 @@
             pushAudioLog('CONFIG', `Guardado STT. model=${values.sttModel || '-'} url=${values.sttApiUrl || '-'}`, 'ok');
             lastSttTestStatus = null;
             statusDiv.textContent = 'Configuracion de STT guardada';
+            if (sttApiKeyInput) sttApiKeyInput.value = '';
         } catch (error) {
             console.error('Failed to save audio configuration:', error);
             statusDiv.textContent = `Error audio: ${error.message}`;
@@ -1263,7 +1146,6 @@
                 throw new Error(extractErrorMessage(detail, 'Failed to update TTS configuration'));
             }
             localStorage.setItem('tts_api_url', values.ttsApiUrl);
-            localStorage.setItem('tts_api_key', values.ttsApiKey);
             localStorage.setItem('tts_voice_id', values.ttsVoiceId);
             localStorage.setItem('tts_model_id', values.ttsModelId);
             localStorage.setItem('tts_language', values.ttsLanguage || 'es-AR');
@@ -1281,6 +1163,7 @@
             pushAudioLog('CONFIG', `Guardado TTS. model=${values.ttsModelId || '-'} voice=${values.ttsVoiceId || '-'} lang=${values.ttsLanguage || 'es-AR'} speed=${values.ttsSpeed || '-'} temp=${values.ttsTemperature || '-'} url=${values.ttsApiUrl || '-'}`, 'ok');
             lastTtsTestStatus = null;
             statusDiv.textContent = 'Configuracion de TTS guardada';
+            if (ttsApiKeyInput) ttsApiKeyInput.value = '';
         } catch (error) {
             statusDiv.textContent = `Error TTS: ${error.message}`;
             if (ttsStatusIndicator) ttsStatusIndicator.classList.add('error');
@@ -1310,11 +1193,6 @@
                 apiUrlInput.value = result.llm.chosen_url;
                 localStorage.setItem('llm_api_url', result.llm.chosen_url);
                 localStorage.removeItem('openai_api_url');
-                const apiKey = (apiKeyInput?.value || '').trim();
-                if (apiKey) {
-                    localStorage.setItem('llm_api_key', apiKey);
-                    localStorage.removeItem('openai_api_key');
-                }
             }
             await checkApiHealth();
             await checkAudioHealth();
@@ -1386,14 +1264,7 @@
                 localStorage.removeItem('llm_api_url');
                 localStorage.removeItem('openai_api_url');
             }
-
-            if (apiKey) {
-                localStorage.setItem('llm_api_key', apiKey);
-                localStorage.removeItem('openai_api_key');
-            } else {
-                localStorage.removeItem('llm_api_key');
-                localStorage.removeItem('openai_api_key');
-            }
+            if (apiKeyInput) apiKeyInput.value = '';
 
             backendLlmState = {
                 ...(backendLlmState || {}),
