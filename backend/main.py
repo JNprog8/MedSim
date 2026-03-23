@@ -1,119 +1,102 @@
+import os
 import time
 from pathlib import Path
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 
-from backend.api import router as api_router
-from backend.services import services
+from backend.core.config import settings
+from backend.core.database import connect_to_mongo, close_mongo_connection
+from backend.core.seeder import seed_from_json
+from backend.api.router import api_router
+from backend.services.container import services
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await connect_to_mongo()
+    await seed_from_json() # Seed if collections are empty (upsert logic handles it)
+    yield
+    # Shutdown
+    await close_mongo_connection()
 
+app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
+
+# Static files
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Static assets (images, audio, etc.)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+app.mount("/frontend-assets", StaticFiles(directory=str(BASE_DIR / "frontend" / "assets")), name="frontend_assets")
 
-# Frontend JS/CSS assets (served separately from HTML pages).
-app.mount(
-    "/frontend-assets",
-    StaticFiles(directory=str(BASE_DIR / "frontend" / "assets")),
-    name="frontend_assets",
-)
+# API
+app.include_router(api_router, prefix="/api")
 
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "timestamp": time.time()}
-
-
+# --- Frontend Routes ---
 def _frontend_file(name: str) -> Path:
     return BASE_DIR / "frontend" / "pages" / name
-
 
 @app.get("/")
 async def root():
     return RedirectResponse(url="/frontend/index")
 
-
-@app.get("/student")
-@app.get("/frontend/student")
-async def student_page():
-    return FileResponse(_frontend_file("student.html"))
-
-
 @app.get("/frontend/index")
 async def index_page():
     return FileResponse(_frontend_file("index.html"))
 
+@app.get("/frontend/student")
+async def student_page():
+    return FileResponse(_frontend_file("student.html"))
 
 @app.get("/frontend/student_join")
 async def student_join_page():
     return FileResponse(_frontend_file("student_join.html"))
 
-
 @app.get("/frontend/student_sessions")
 async def student_sessions_page():
     return FileResponse(_frontend_file("student_sessions.html"))
 
-
-@app.get("/evaluator")
 @app.get("/frontend/evaluator")
 async def evaluator_page():
     return FileResponse(_frontend_file("evaluator_dashboard.html"))
-
 
 @app.get("/frontend/evaluator_encounter")
 async def evaluator_encounter_page():
     return FileResponse(_frontend_file("evaluator_encounter.html"))
 
-
 @app.get("/frontend/patients")
 async def patients_page():
     return FileResponse(_frontend_file("patients.html"))
-
 
 @app.get("/frontend/students")
 async def students_page():
     return FileResponse(_frontend_file("students.html"))
 
-
+# --- WebSocket ---
 @app.websocket("/ws/encounters/{encounter_id}")
 async def ws_encounter_stream(websocket: WebSocket, encounter_id: str):
-    # session_id is optional now; the conversation is scoped by encounter_id (multi-user).
-    encounter = services.encounter_service.get_encounter_by_session(
-        encounter_id, (websocket.query_params.get("session_id") or "").strip()
-    )
-    if not encounter:
-        await websocket.close(code=1008)
-        return
-
     await websocket.accept()
     await services.realtime_hub.subscribe(encounter_id, websocket)
 
-    # Send snapshot on connect.
-    history = services.encounter_service.chat_histories.get(encounter_id, [])
-    await websocket.send_json(
-        {
+    # Send current history snapshot
+    encounter = await services.encounter_service.get_encounter(encounter_id)
+    if encounter:
+        await websocket.send_json({
             "type": "snapshot",
             "encounter_id": encounter_id,
-            "patient_id": encounter.get("patient_id"),
-            "finished_at": encounter.get("finished_at"),
-            "messages": [m for m in history if m.get("role") != "system"],
-        }
-    )
+            "patient_id": encounter.patient_id,
+            "messages": [m.model_dump() for m in encounter.chat_history],
+        })
 
     try:
         while True:
-            # Evaluator sends pings; we just consume.
-            await websocket.receive_text()
+            # We mostly broadcast events from the orchestrator, 
+            # but we can listen for pings/messages here if needed.
+            data = await websocket.receive_text()
     except WebSocketDisconnect:
-        pass
-    except Exception:
         pass
     finally:
         await services.realtime_hub.unsubscribe(encounter_id, websocket)
 
-
-app.include_router(api_router)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=settings.PORT, reload=settings.DEBUG)

@@ -42,12 +42,14 @@ env/
 htmlcov/
 
 # Logs y Archivos de Sistema de Docker
-logs/
+logs/*.log
+logs/*.txt
+!logs/.keep
 
-# Storage - Datos Dinámicos
-storage/audio/
-storage/encounters/*.json
-storage/evaluations/*.json
-# (Mantenemos patients/ y students/ en git si son datos iniciales "seeds")
-!storage/patients/*.json
-!storage/students/*.json
+# Storage - Datos Dinámicos (Carpetas en la raíz según docker-compose)
+encounters/*.json
+!encounters/.keep
+evaluations/*.json
+!evaluations/.keep
+audio/*/
+!audio/.keep

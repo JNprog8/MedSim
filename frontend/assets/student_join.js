@@ -38,7 +38,7 @@
     if (joining) return;
 
     const resp = await fetch('/api/encounters_public').then((r) => r.json()).catch(() => ({}));
-    const encounters = Array.isArray(resp.encounters) ? resp.encounters : [];
+    const encounters = Array.isArray(resp) ? resp : (Array.isArray(resp.encounters) ? resp.encounters : []);
     const active = encounters.find((encounter) => encounter && encounter.finished_at == null);
 
     if (!active) {

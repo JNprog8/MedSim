@@ -142,7 +142,7 @@
         if (!encId) return;
         try {
           setStatus('Abriendo conversación...');
-          await fetch(`/api/encounters/${encodeURIComponent(encId)}/link`, { method: 'POST', headers: headersJson(), body: '{}' }).catch(() => {});
+          await fetch(`/api/encounters/${encodeURIComponent(encId)}/link/`, { method: 'POST', headers: headersJson(), body: '{}' }).catch(() => {});
           window.location.href = `/frontend/evaluator_encounter?encounter_id=${encodeURIComponent(encId)}`;
         } catch (error) {
           setStatus(String(error?.message || error));
@@ -158,7 +158,7 @@
         if (!ok) return;
         try {
           setStatus('Eliminando conversación...');
-          const resp = await fetch(`/api/evaluations/${encodeURIComponent(encId)}`, { method: 'DELETE', headers: { 'X-Session-Id': sessionId } });
+          const resp = await fetch(`/api/evaluations/${encodeURIComponent(encId)}/`, { method: 'DELETE', headers: { 'X-Session-Id': sessionId } });
           if (!resp.ok) throw new Error(await resp.text());
           await loadSavedEncounters();
           setStatus('');
@@ -170,9 +170,9 @@
   }
 
   async function loadPatients() {
-    const resp = await fetch('/api/patients', { headers: { 'X-Session-Id': sessionId } });
+    const resp = await fetch('/api/patients/', { headers: { 'X-Session-Id': sessionId } });
     const data = await resp.json();
-    const patients = data.patients || [];
+    const patients = Array.isArray(data) ? data : (data.patients || []);
     patientSelect.innerHTML = '';
     for (const patient of patients) {
       const opt = document.createElement('option');
@@ -183,9 +183,9 @@
   }
 
   async function loadStudents() {
-    const resp = await fetch('/api/students', { headers: { 'X-Session-Id': sessionId } });
+    const resp = await fetch('/api/students/', { headers: { 'X-Session-Id': sessionId } });
     const data = await resp.json();
-    const students = data.students || [];
+    const students = Array.isArray(data) ? data : (data.students || []);
     studentSelect.innerHTML = '';
     for (const student of students) {
       const opt = document.createElement('option');
@@ -197,17 +197,19 @@
 
   async function loadMaps() {
     const [patientsResp, studentsResp] = await Promise.all([
-      fetch('/api/patients').then((r) => r.json()).catch(() => ({})),
-      fetch('/api/students').then((r) => r.json()).catch(() => ({})),
+      fetch('/api/patients/').then((r) => r.json()).catch(() => ({})),
+      fetch('/api/students/').then((r) => r.json()).catch(() => ({})),
     ]);
 
     const pMap = new Map();
-    for (const patient of (patientsResp.patients || [])) {
+    const patients = Array.isArray(patientsResp) ? patientsResp : (patientsResp.patients || []);
+    for (const patient of patients) {
       pMap.set(String(patient.id), `${patient.name} (${patient.age})`);
     }
 
     const sMap = new Map();
-    for (const student of (studentsResp.students || [])) {
+    const students = Array.isArray(studentsResp) ? studentsResp : (studentsResp.students || []);
+    for (const student of students) {
       sMap.set(String(student.id), `${student.name}${student.student_identifier ? ` (${student.student_identifier})` : ''}`);
     }
 
@@ -222,7 +224,7 @@
       const resp = await fetch('/api/encounters_public');
       if (!resp.ok) throw new Error(await resp.text());
       const data = await resp.json();
-      allEncounters = data.encounters || [];
+      allEncounters = Array.isArray(data) ? data : (data.encounters || []);
       renderRows();
       setStatus(`${allEncounters.length} conversación${allEncounters.length === 1 ? '' : 'es'} disponibles`);
     } catch (error) {

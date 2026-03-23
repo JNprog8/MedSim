@@ -1,7 +1,7 @@
-﻿from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-
+import time
+import uuid
 
 class PatientProfile(BaseModel):
     id: str = Field(..., description="Stable identifier (used by UI)")
@@ -10,10 +10,10 @@ class PatientProfile(BaseModel):
     region: str = Field("AMBA", description="Region within Argentina")
 
     class TrueCaseReveal(BaseModel):
-        diagnostico_principal: str = Field(..., description="Diagnostico principal verdadero")
+        diagnostico_principal: str
         diferenciales: List[str] = Field(default_factory=list)
-        indicaciones_plan: str = Field(..., description="Indicaciones / plan")
-        receta: Optional[str] = Field(None)
+        indicaciones_plan: str
+        receta: Optional[str] = None
 
     class AdministrativeInfo(BaseModel):
         full_name: Optional[str] = None
@@ -54,22 +54,37 @@ class PatientProfile(BaseModel):
     cognitive_confusion: str = "Normal"
     speaking_style: str = "rioplatense"
 
-
 class StudentProfile(BaseModel):
     id: str = Field(..., description="Stable identifier (used by UI)")
     name: str
-    student_identifier: Optional[str] = Field(None, description="Displayed as ID in the SEGUE form")
+    student_identifier: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
+class Message(BaseModel):
+    role: str
+    content: str
+    timestamp: float = Field(default_factory=time.time)
+    message_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    audio_url: Optional[str] = None
+
+class Encounter(BaseModel):
+    encounter_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    patient_id: str
+    student_id: Optional[str] = None
+    evaluator_name: Optional[str] = None
+    chat_history: List[Message] = Field(default_factory=list)
+    started_at: float = Field(default_factory=time.time)
+    finished_at: Optional[float] = None
+    is_completed_successfully: bool = False
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 class SegueEvaluationItem(BaseModel):
-    item_id: str
+    id: str
     value: str = Field(..., pattern=r"^(yes|no|nc)$")
-    observations: str = ""
-
+    notes: str = ""
 
 class SegueEvaluation(BaseModel):
-    id: str
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     encounter_id: str
     patient_id: str
     student_id: str
@@ -77,5 +92,5 @@ class SegueEvaluation(BaseModel):
     student_identifier: Optional[str] = None
     evaluator_name: str
     items: List[SegueEvaluationItem] = Field(default_factory=list)
-    created_at: float = 0.0
-    updated_at: float = 0.0
+    created_at: float = Field(default_factory=time.time)
+    updated_at: float = Field(default_factory=time.time)

@@ -188,7 +188,7 @@
   async function loadEncounterHistory() {
     if (!encounterId) return;
     try {
-      const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/history`, { headers: { 'X-Session-Id': sessionId } });
+      const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/history/`, { headers: { 'X-Session-Id': sessionId } });
       if (!resp.ok) return;
       const data = await resp.json().catch(() => ({}));
       const visible = Array.isArray(data.visible_messages) ? data.visible_messages : [];
@@ -290,7 +290,7 @@
   async function saveEvaluationNow() {
     if (!currentEvaluation) return;
     currentEvaluation.encounter_id = encounterId;
-    const resp = await fetch('/api/evaluations', {
+    const resp = await fetch('/api/evaluations/', {
       method: 'POST',
       headers: headersJson(),
       body: JSON.stringify(currentEvaluation),
@@ -401,7 +401,7 @@
   }
 
   async function loadEvaluation() {
-    const resp = await fetch(`/api/evaluations?encounter_id=${encodeURIComponent(encounterId)}`, { headers: { 'X-Session-Id': sessionId } });
+    const resp = await fetch(`/api/evaluations/?encounter_id=${encodeURIComponent(encounterId)}`, { headers: { 'X-Session-Id': sessionId } });
     if (!resp.ok) return;
     const data = await resp.json().catch(() => ({}));
     currentEvaluation = data?.evaluation || buildEmptyEvaluation();
@@ -415,9 +415,9 @@
     encounterId = String(id || '').trim();
     if (!encounterId) return;
     // Try to adopt/link first (helps if opened directly by URL).
-    await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/link`, { method: 'POST', headers: headersJson(), body: '{}' }).catch(() => {});
+    await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/link/`, { method: 'POST', headers: headersJson(), body: '{}' }).catch(() => {});
 
-    const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}`, { headers: { 'X-Session-Id': sessionId } });
+    const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/`, { headers: { 'X-Session-Id': sessionId } });
     if (!resp.ok) throw new Error(await resp.text());
     const meta = await resp.json().catch(() => ({}));
     setEncounterFinished(meta.finished_at);
@@ -438,7 +438,7 @@
       finished_at_client: Date.now(),
     });
     try {
-      await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/finish`, {
+      await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/finish/`, {
         method: 'POST',
         headers: headersJson(),
         body,
@@ -468,7 +468,7 @@
       const ok = window.confirm('Activar conversación? El estudiante podrá volver a enviar mensajes.');
       if (!ok) return;
       setStatus('Reabriendo...');
-      const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/reopen`, { method: 'POST', headers: headersJson() });
+      const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/reopen/`, { method: 'POST', headers: headersJson() });
       if (!resp.ok) return setStatus(await resp.text());
       setEncounterFinished(null);
       connectWs();
@@ -487,7 +487,7 @@
     try {
       setStatus('Finalizando...');
       const body = { closed_by: 'evaluator', evaluation: currentEvaluation || null, finished_at_client: Date.now() };
-      const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/finish`, {
+      const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/finish/`, {
         method: 'POST',
         headers: headersJson(),
         body: JSON.stringify(body),

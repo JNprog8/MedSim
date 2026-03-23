@@ -6,3 +6,6 @@ jinja2
 aiohttp
 openai
 python-dotenv
+motor
+pydantic-settings
+pydantic[email]

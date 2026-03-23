@@ -55,7 +55,7 @@
     const sid = String(id || '').trim();
     if (!sid) return;
     setFormStatus('Cargando alumno...');
-    const resp = await fetch(`/api/students/${encodeURIComponent(sid)}`);
+    const resp = await fetch(`/api/students/${encodeURIComponent(sid)}/`);
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json().catch(() => ({}));
     const student = data.student || data;
@@ -127,7 +127,7 @@
         if (!ok) return;
         try {
           setListStatus('Eliminando alumno...');
-          const resp = await fetch(`/api/students/${encodeURIComponent(sid)}`, { method: 'DELETE' });
+          const resp = await fetch(`/api/students/${encodeURIComponent(sid)}/`, { method: 'DELETE' });
           if (!resp.ok) throw new Error(await resp.text());
           await loadTable();
         } catch (error) {
@@ -140,9 +140,9 @@
   async function loadTable() {
     setListStatus('Cargando alumnos...');
     rowsEl.innerHTML = '<tr><td colspan="3" class="eval-small">Cargando alumnos...</td></tr>';
-    const resp = await fetch('/api/students');
+    const resp = await fetch('/api/students/');
     const data = await resp.json().catch(() => ({}));
-    allStudents = data.students || [];
+    allStudents = Array.isArray(data) ? data : (data.students || []);
     renderRows();
     setListStatus(`${allStudents.length} alumno${allStudents.length === 1 ? '' : 's'} cargados`);
   }
@@ -167,7 +167,7 @@
     setFormStatus('');
     try {
       const payload = buildPayload();
-      const resp = await fetch('/api/students', {
+      const resp = await fetch('/api/students/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -187,7 +187,7 @@
     if (!ok) return;
     try {
       setFormStatus('Eliminando alumno...');
-      const resp = await fetch(`/api/students/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const resp = await fetch(`/api/students/${encodeURIComponent(id)}/`, { method: 'DELETE' });
       if (!resp.ok) throw new Error(await resp.text());
       closeModal();
       await loadTable();

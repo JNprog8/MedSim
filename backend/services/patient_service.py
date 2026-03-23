@@ -1,58 +1,19 @@
-from __future__ import annotations
-
-import json
-import logging
-import re
-from pathlib import Path
-from typing import Dict, Optional
-
-from ..domain.models import PatientProfile
-
-logger = logging.getLogger(__name__)
-
-PATIENT_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{1,63}$")
-
+from typing import List, Optional
+from backend.domain.models import PatientProfile
+from backend.persistence.patient_repository import PatientRepository
 
 class PatientService:
-    def __init__(self, patients_dir: Path):
-        self.patients_dir = patients_dir
+    def __init__(self, repository: PatientRepository):
+        self.repository = repository
 
-    def load_patients(self) -> Dict[str, PatientProfile]:
-        patients: Dict[str, PatientProfile] = {}
-        try:
-            if not self.patients_dir.exists():
-                return patients
-            for path in sorted(self.patients_dir.glob("*.json")):
-                try:
-                    data = json.loads(path.read_text(encoding="utf-8-sig"))
-                    profile = PatientProfile.model_validate(data)
-                    patients[profile.id] = profile
-                except Exception as exc:
-                    logger.warning("Skipping invalid patient profile %s: %s", path, exc)
-        except Exception as exc:
-            logger.warning("Failed to load patients from %s: %s", self.patients_dir, exc)
-        return patients
+    async def get_all_patients(self) -> List[PatientProfile]:
+        return await self.repository.list_all()
 
-    def get_patient(self, patient_id: str) -> Optional[PatientProfile]:
-        return self.load_patients().get(patient_id)
+    async def get_patient_by_id(self, patient_id: str) -> Optional[PatientProfile]:
+        return await self.repository.get_by_id(patient_id)
 
-    def get_default_patient_id(self, patients: Dict[str, PatientProfile]) -> Optional[str]:
-        return next(iter(patients.keys()), None)
+    async def create_or_update_patient(self, patient: PatientProfile) -> str:
+        return await self.repository.upsert(patient)
 
-    def save_patient(self, profile: PatientProfile) -> Path:
-        if not PATIENT_ID_RE.match(profile.id):
-            raise ValueError("Invalid patient id (use letters/numbers/_/-; 2-64 chars)")
-        self.patients_dir.mkdir(parents=True, exist_ok=True)
-        path = self.patients_dir / f"{profile.id}.json"
-        path.write_text(json.dumps(profile.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
-        return path
-
-    def delete_patient(self, patient_id: str) -> bool:
-        safe = str(patient_id or "").strip()
-        if not PATIENT_ID_RE.match(safe):
-            raise ValueError("Invalid patient id")
-        path = (self.patients_dir / f"{safe}.json")
-        if not path.exists():
-            return False
-        path.unlink()
-        return True
+    async def delete_patient(self, patient_id: str) -> bool:
+        return await self.repository.delete(patient_id)

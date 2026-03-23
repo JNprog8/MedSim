@@ -1,59 +1,49 @@
-﻿from __future__ import annotations
+from backend.persistence.patient_repository import PatientRepository
+from backend.persistence.student_repository import StudentRepository
+from backend.persistence.encounter_repository import EncounterRepository
+from backend.persistence.evaluation_repository import EvaluationRepository
 
-from .audio_turn_service import AudioTurnService
-from .encounter_service import EncounterService
-from .evaluation_service import EvaluationService
-from .llm_service import LLMService
-from .patient_service import PatientService
-from .prompt_service import PromptService
-from .realtime.hub import get_realtime_hub
-from .settings import load_settings
-from .student_service import StudentService
-from .stt_service import STTService
-from .tts_service import TTSService
-
+from backend.services.patient_service import PatientService
+from backend.services.student_service import StudentService
+from backend.services.encounter_service import EncounterService
+from backend.services.evaluation_service import EvaluationService
+from backend.services.llm_service import LLMService
+from backend.services.stt_service import STTService
+from backend.services.tts_service import TTSService
+from backend.services.prompt_service import PromptService
+from backend.services.audio_orchestrator import AudioOrchestrator
+from backend.services.realtime.hub import get_realtime_hub
 
 class ServiceContainer:
     def __init__(self):
-        self.settings = load_settings()
+        # Repositories
+        self.patient_repo = PatientRepository()
+        self.student_repo = StudentRepository()
+        self.encounter_repo = EncounterRepository()
+        self.evaluation_repo = EvaluationRepository()
 
+        # Core Services
+        self.patient_service = PatientService(self.patient_repo)
+        self.student_service = StudentService(self.student_repo)
+        self.encounter_service = EncounterService(self.encounter_repo)
+        self.evaluation_service = EvaluationService(self.evaluation_repo)
+        
+        self.llm_service = LLMService()
+        self.stt_service = STTService()
+        self.tts_service = TTSService()
+        self.prompt_service = PromptService()
         self.realtime_hub = get_realtime_hub()
 
-        self.patient_service = PatientService(self.settings.patients_dir)
-        self.student_service = StudentService(self.settings.students_dir)
-        self.evaluation_service = EvaluationService(self.settings.evaluations_dir)
-
-        self.prompt_service = PromptService()
-        self.encounter_service = EncounterService(
+        # Orchestrator
+        self.audio_orchestrator = AudioOrchestrator(
             self.patient_service,
-            self.prompt_service,
-            settings=self.settings,
-            realtime_hub=self.realtime_hub,
-        )
-
-        self.llm_service = LLMService(self.settings)
-        self.stt_service = STTService(
-            api_url=self.settings.stt_api_url,
-            api_key=self.settings.stt_api_key,
-            model=self.settings.stt_model,
-        )
-        self.tts_service = TTSService(
-            api_url=self.settings.tts_api_url,
-            api_key=self.settings.tts_api_key,
-            voice_id=self.settings.tts_voice_id,
-            model_id=self.settings.tts_model_id,
-            language=self.settings.tts_language,
-            speed=None,
-            temperature=None,
-        )
-        self.audio_turn_service = AudioTurnService(
-            self.patient_service,
-            self.prompt_service,
             self.encounter_service,
             self.llm_service,
             self.stt_service,
             self.tts_service,
+            self.prompt_service,
+            self.realtime_hub
         )
 
-
+# Global singleton
 services = ServiceContainer()

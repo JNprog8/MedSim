@@ -54,15 +54,17 @@
 
   async function loadMaps() {
     const [patientsResp, studentsResp] = await Promise.all([
-      fetch('/api/patients').then((r) => r.json()).catch(() => ({})),
-      fetch('/api/students').then((r) => r.json()).catch(() => ({})),
+      fetch('/api/patients/').then((r) => r.json()).catch(() => ({})),
+      fetch('/api/students/').then((r) => r.json()).catch(() => ({})),
     ]);
     const pMap = new Map();
-    for (const p of (patientsResp.patients || [])) {
+    const patients = Array.isArray(patientsResp) ? patientsResp : (patientsResp.patients || []);
+    for (const p of patients) {
       pMap.set(String(p.id), `${p.name} (${p.age})`);
     }
     const sMap = new Map();
-    for (const s of (studentsResp.students || [])) {
+    const students = Array.isArray(studentsResp) ? studentsResp : (studentsResp.students || []);
+    for (const s of students) {
       sMap.set(String(s.id), `${s.name}${s.student_identifier ? ` (${s.student_identifier})` : ''}`);
     }
     return { pMap, sMap };
@@ -134,7 +136,7 @@
 
     mapsCache = await loadMaps().catch(() => ({ pMap: new Map(), sMap: new Map() }));
     const resp = await fetch('/api/encounters_public').then((r) => r.json()).catch(() => ({}));
-    allEncounters = Array.isArray(resp.encounters) ? resp.encounters : [];
+    allEncounters = Array.isArray(resp) ? resp : (Array.isArray(resp.encounters) ? resp.encounters : []);
     renderSessionList();
   }
 

@@ -160,7 +160,7 @@
     const pid = String(id || '').trim();
     if (!pid) return;
     setFormStatus('Cargando paciente...');
-    const resp = await fetch(`/api/patients/${encodeURIComponent(pid)}`);
+    const resp = await fetch(`/api/patients/${encodeURIComponent(pid)}/`);
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json().catch(() => ({}));
     fillForm(data.patient || data);
@@ -306,7 +306,7 @@
         if (!ok) return;
         try {
           setListStatus('Eliminando paciente...');
-          const resp = await fetch(`/api/patients/${encodeURIComponent(pid)}`, { method: 'DELETE' });
+          const resp = await fetch(`/api/patients/${encodeURIComponent(pid)}/`, { method: 'DELETE' });
           if (!resp.ok) throw new Error(await resp.text());
           await loadTable();
         } catch (error) {
@@ -319,9 +319,9 @@
   async function loadTable() {
     setListStatus('Cargando pacientes...');
     rowsEl.innerHTML = '<tr><td colspan="4" class="eval-small">Cargando pacientes...</td></tr>';
-    const resp = await fetch('/api/patients');
+    const resp = await fetch('/api/patients/');
     const data = await resp.json().catch(() => ({}));
-    allPatients = data.patients || [];
+    allPatients = Array.isArray(data) ? data : (data.patients || []);
     renderRows();
     setListStatus(`${allPatients.length} paciente${allPatients.length === 1 ? '' : 's'} cargados`);
   }
@@ -339,7 +339,7 @@
     setFormStatus('');
     try {
       const payload = buildPayload();
-      const resp = await fetch('/api/patients', {
+      const resp = await fetch('/api/patients/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -359,7 +359,7 @@
     if (!ok) return;
     try {
       setFormStatus('Eliminando paciente...');
-      const resp = await fetch(`/api/patients/${encodeURIComponent(pid)}`, { method: 'DELETE' });
+      const resp = await fetch(`/api/patients/${encodeURIComponent(pid)}/`, { method: 'DELETE' });
       if (!resp.ok) throw new Error(await resp.text());
       closeModal();
       await loadTable();
