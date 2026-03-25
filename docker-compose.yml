@@ -17,16 +17,5 @@
       - TTS_VOICE_ID=${TTS_VOICE_ID:-}
       - TTS_MODEL_ID=${TTS_MODEL_ID:-}
       - TTS_LANGUAGE=${TTS_LANGUAGE:-}
-      - PATIENTS_DIR=/app/patients
-      - STUDENTS_DIR=/app/students
-      - EVALUATIONS_DIR=/app/evaluations
-      - ENCOUNTERS_DIR=/app/encounters
-      - AUDIO_DIR=/app/audio
-    volumes:
-      - ./patients:/app/patients
-      - ./students:/app/students
-      - ./evaluations:/app/evaluations
-      - ./encounters:/app/encounters
-      - ./audio:/app/audio
     extra_hosts:
       - "host.docker.internal:host-gateway"

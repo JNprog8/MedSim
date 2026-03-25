@@ -23,3 +23,14 @@ class EncounterRepository(BaseRepository[Encounter]):
             {"encounter_id": encounter_id},
             {"$set": {"finished_at": finished_at, "is_completed_successfully": success}}
         )
+
+    async def reopen_encounter(self, encounter_id: str) -> bool:
+        result = await self.collection.update_one(
+            {"encounter_id": encounter_id},
+            {"$set": {"finished_at": None, "is_completed_successfully": False}}
+        )
+        return result.modified_count > 0
+
+    async def delete_by_encounter_id(self, encounter_id: str) -> bool:
+        result = await self.collection.delete_one({"encounter_id": encounter_id})
+        return result.deleted_count > 0

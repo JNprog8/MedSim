@@ -36,5 +36,16 @@ class EncounterService:
         return await self.repository.list_all(filter_query=query)
 
     async def list_public_encounters(self) -> List[Encounter]:
-        """List encounters that are public/viewable (finished encounters)"""
-        return await self.repository.list_all(filter_query={"finished_at": {"$exists": True}})
+        """List encounters that are public/viewable."""
+        return await self.repository.list_all()
+
+    async def delete_encounter(self, encounter_id: str) -> bool:
+        return await self.repository.delete_by_encounter_id(encounter_id)
+
+    async def reopen_encounter(self, encounter_id: str):
+        reopened = await self.repository.reopen_encounter(encounter_id)
+        if not reopened:
+            encounter = await self.get_encounter(encounter_id)
+            if not encounter:
+                return None
+        return await self.get_encounter(encounter_id)

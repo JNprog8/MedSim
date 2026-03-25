@@ -1,8 +1,6 @@
-import os
 from pathlib import Path
 from typing import Optional
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,14 +14,6 @@ class Settings(BaseSettings):
     # --- MONGO DB ---
     MONGO_URL: str = "mongodb://localhost:27017/medsim"
     MONGO_DB_NAME: str = "medsim"
-
-    # --- DIRECTORIOS DE DATOS ---
-    PATIENTS_DIR: Path = Field(default_factory=lambda: Path("patients"))
-    STUDENTS_DIR: Path = Field(default_factory=lambda: Path("students"))
-    EVALUATIONS_DIR: Path = Field(default_factory=lambda: Path("evaluations"))
-    ENCOUNTERS_DIR: Path = Field(default_factory=lambda: Path("encounters"))
-    AUDIO_DIR: Path = Field(default_factory=lambda: Path("audio"))
-
     # --- LLM CONFIG ---
     PATIENT_LLM_URL: Optional[str] = None
     PATIENT_LLM_API_KEY: Optional[str] = None
@@ -45,30 +35,5 @@ class Settings(BaseSettings):
     TTS_TEMPERATURE: float = 0.5
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
-    @property
-    def patients_path(self) -> Path:
-        p = Path(os.environ.get("PATIENTS_DIR", self.BASE_DIR / "patients"))
-        if not p.is_absolute():
-            p = self.BASE_DIR / p
-        p.mkdir(parents=True, exist_ok=True)
-        return p
-
-    @property
-    def students_path(self) -> Path:
-        p = Path(os.environ.get("STUDENTS_DIR", self.BASE_DIR / "students"))
-        if not p.is_absolute():
-            p = self.BASE_DIR / p
-        p.mkdir(parents=True, exist_ok=True)
-        return p
-
-    @property
-    def audio_path(self) -> Path:
-        p = Path(os.environ.get("AUDIO_DIR", self.BASE_DIR / "audio"))
-        if not p.is_absolute():
-            p = self.BASE_DIR / p
-        p.mkdir(parents=True, exist_ok=True)
-        return p
-
 
 settings = Settings()

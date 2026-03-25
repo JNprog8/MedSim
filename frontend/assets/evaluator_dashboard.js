@@ -28,7 +28,6 @@
   const modalSession = document.getElementById('modal-session');
 
   let allEncounters = [];
-  let mapsCache = { pMap: new Map(), sMap: new Map() };
   let currentPage = 1;
 
   function headersJson() {
@@ -67,10 +66,10 @@
 
   function buildEncounterView(encounter) {
     const encId = String(encounter.encounter_id || '');
-    const student = mapsCache.sMap.get(String(encounter.student_id || '')) || String(encounter.student_id || '-');
-    const patient = mapsCache.pMap.get(String(encounter.patient_id || '')) || String(encounter.patient_id || '-');
+    const student = String(encounter.student_label || '').trim() || String(encounter.student_id || '-');
+    const patient = String(encounter.patient_label || '').trim() || String(encounter.patient_id || '-');
     const evaluator = String(encounter.evaluator_name || '-');
-    const finished = encounter.finished_at != null;
+    const finished = encounter.finished ?? (encounter.finished_at != null);
 
     return {
       encounter,
@@ -79,7 +78,7 @@
       patient,
       evaluator,
       finished,
-      statusLabel: finished ? 'Finalizada' : 'Activa',
+      statusLabel: String(encounter.status_label || '').trim() || (finished ? 'Finalizada' : 'Activa'),
       searchValue: `${student} ${patient} ${evaluator} ${encId}`.toLowerCase(),
     };
   }
@@ -195,32 +194,10 @@
     }
   }
 
-  async function loadMaps() {
-    const [patientsResp, studentsResp] = await Promise.all([
-      fetch('/api/patients/').then((r) => r.json()).catch(() => ({})),
-      fetch('/api/students/').then((r) => r.json()).catch(() => ({})),
-    ]);
-
-    const pMap = new Map();
-    const patients = Array.isArray(patientsResp) ? patientsResp : (patientsResp.patients || []);
-    for (const patient of patients) {
-      pMap.set(String(patient.id), `${patient.name} (${patient.age})`);
-    }
-
-    const sMap = new Map();
-    const students = Array.isArray(studentsResp) ? studentsResp : (studentsResp.students || []);
-    for (const student of students) {
-      sMap.set(String(student.id), `${student.name}${student.student_identifier ? ` (${student.student_identifier})` : ''}`);
-    }
-
-    mapsCache = { pMap, sMap };
-  }
-
   async function loadSavedEncounters() {
     if (!savedEncountersEl) return;
     try {
       setStatus('Cargando conversaciones...');
-      await loadMaps();
       const resp = await fetch('/api/encounters_public');
       if (!resp.ok) throw new Error(await resp.text());
       const data = await resp.json();

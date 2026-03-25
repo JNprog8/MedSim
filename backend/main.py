@@ -6,9 +6,9 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
+from backend.core.bootstrap import bootstrap_demo_data
 from backend.core.config import settings
 from backend.core.database import connect_to_mongo, close_mongo_connection
-from backend.core.seeder import seed_from_json
 from backend.api.router import api_router
 from backend.services.container import services
 
@@ -16,7 +16,7 @@ from backend.services.container import services
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
-    await seed_from_json() # Seed if collections are empty (upsert logic handles it)
+    await bootstrap_demo_data()
     yield
     # Shutdown
     await close_mongo_connection()
@@ -25,7 +25,9 @@ app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
 # Static files
 BASE_DIR = Path(__file__).resolve().parent.parent
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 app.mount("/frontend-assets", StaticFiles(directory=str(BASE_DIR / "frontend" / "assets")), name="frontend_assets")
 
 # API
@@ -84,6 +86,7 @@ async def ws_encounter_stream(websocket: WebSocket, encounter_id: str):
             "type": "snapshot",
             "encounter_id": encounter_id,
             "patient_id": encounter.patient_id,
+            "finished_at": encounter.finished_at,
             "messages": [m.model_dump() for m in encounter.chat_history],
         })
 

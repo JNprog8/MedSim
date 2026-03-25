@@ -1,16 +1,16 @@
-import mimetypes
-from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
-from backend.core.config import settings
+from fastapi.responses import Response
+from backend.services.container import services
 
 router = APIRouter()
 
-@router.get("/{encounter_id}/{filename}")
-async def get_audio_file(encounter_id: str, filename: str):
-    path = (settings.audio_path / encounter_id / filename).resolve()
-    if not path.exists() or not path.is_file():
+@router.get("/{audio_id}")
+async def get_audio_file(audio_id: str):
+    audio_asset = await services.audio_service.get_audio(audio_id)
+    if not audio_asset:
         raise HTTPException(status_code=404, detail="Audio file not found")
-    
-    media_type, _ = mimetypes.guess_type(str(path))
-    return FileResponse(path, media_type=media_type or "audio/wav")
+
+    return Response(
+        content=audio_asset.to_bytes(),
+        media_type=audio_asset.content_type or "audio/wav",
+    )

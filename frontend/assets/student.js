@@ -1,20 +1,24 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
-    function extractErrorMessage(rawText, fallback = 'Request failed') {
-        const text = String(rawText || '').trim();
-        if (!text) return fallback;
-        try {
-            const payload = JSON.parse(text);
-            if (payload && typeof payload === 'object') {
-                const detail = payload.detail;
-                if (typeof detail === 'string' && detail.trim()) return detail.trim();
-                if (detail && typeof detail === 'object' && typeof detail.message === 'string' && detail.message.trim()) {
-                    return detail.message.trim();
-                }
-                if (typeof payload.message === 'string' && payload.message.trim()) return payload.message.trim();
-            }
-        } catch {}
-        return text;
-    }
+    const StudentContract = window.MedSimStudentContract;
+    const StudentAudio = window.MedSimStudentAudio;
+    const {
+        extractErrorMessage,
+        getAssistantMessageId,
+        getMessageAudioPayload,
+        getReplyText,
+        getTtsPayload,
+        getUserText,
+        isFinishedEncounterResponse,
+        isMissingEncounterResponse,
+        requestChatReply: requestChatReplyFromApi,
+    } = StudentContract;
+    const {
+        attachAudioControls: attachStudentAudioControls,
+        encodeWavBlob,
+        playAudioFromBase64,
+        playAudioFromUrl,
+        stopCurrentAudioPlayback,
+    } = StudentAudio;
 
     const micButton = document.getElementById('mic-button');
     const micHint = document.getElementById('mic-hint');
@@ -297,6 +301,34 @@
         }
     }
 
+    async function loadStudentView(encounterId, fallbackPatientId = '') {
+        const encId = String(encounterId || '').trim();
+        if (!encId) {
+            await loadClinical(fallbackPatientId);
+            return;
+        }
+        try {
+            setClinicalText('Cargando ficha clinica...');
+            const resp = await fetch(`/api/encounters/${encodeURIComponent(encId)}/student_view`, {
+                headers: { 'Content-Type': 'application/json', 'X-Session-Id': sessionId },
+            });
+            if (!resp.ok) {
+                await loadClinical(fallbackPatientId);
+                return;
+            }
+            const data = await resp.json().catch(() => ({}));
+            renderClinical(data?.patient || null);
+            if (data?.finished_at) {
+                setEncounterClosed('Conversación finalizada (solo lectura)');
+            } else if (encounterClosed) {
+                setEncounterOpen('Conversación activa');
+            }
+        } catch (e) {
+            console.error('Failed to load student view:', e);
+            await loadClinical(fallbackPatientId);
+        }
+    }
+
     let currentEncounterId = null;
 
     const lockedToEncounterFromUrl = !!encounterFromUrl;
@@ -322,7 +354,7 @@
                     patientSelect.value = pid;
                     localStorage.setItem(patientIdKey, pid);
                 }
-                await loadClinical(pid);
+                await loadStudentView(encounterFromUrl, pid);
             }
             if (patientSelect) patientSelect.disabled = true;
             if (reloadPatientsButton) reloadPatientsButton.disabled = true;
@@ -362,18 +394,6 @@
             statusDiv.textContent = 'Error iniciando consulta';
             setChatLocked(false);
         }
-    }
-
-    function isMissingEncounterResponse(status, detail) {
-        if (status !== 404) return false;
-        const text = String(detail || '').toLowerCase();
-        return text.includes('encounter not found') || text.includes('not found');
-    }
-
-    function isFinishedEncounterResponse(status, detail) {
-        if (status !== 409) return false;
-        const text = String(detail || '').toLowerCase();
-        return text.includes('encounter finished') || text.includes('finished');
     }
 
     async function ensureActiveEncounter(patientId = patientSelect?.value) {
@@ -560,16 +580,16 @@
                 patientSelect.value = initial;
                 localStorage.setItem(patientIdKey, initial);
                 await startEncounter(initial);
-                await loadClinical(initial);
+                await loadStudentView(currentEncounterId, initial);
             } else {
                 renderClinical(null);
             }
 
-            patientSelect.onchange = () => {
+            patientSelect.onchange = async () => {
                 const chosen = patientSelect.value;
                 localStorage.setItem(patientIdKey, chosen);
-                startEncounter(chosen);
-                loadClinical(chosen);
+                await startEncounter(chosen);
+                await loadStudentView(currentEncounterId, chosen);
                 messagesContainer.innerHTML = '';
                 statusDiv.textContent = 'Paciente cambiado';
             };
@@ -591,9 +611,13 @@
         });
     }
 
+    function audioFlag(primaryKey, legacyKey) {
+        return !!(backendAudioState?.[primaryKey] ?? backendAudioState?.[legacyKey]);
+    }
+
     function hasBackendAudioConfig() {
-        const sttConfigured = !!backendAudioState?.stt_configured;
-        const ttsConfigured = !!backendAudioState?.tts_configured;
+        const sttConfigured = audioFlag('stt_api_key_configured', 'stt_configured');
+        const ttsConfigured = audioFlag('tts_api_key_configured', 'tts_configured');
         return Boolean(sttConfigured || ttsConfigured);
     }
 
@@ -602,11 +626,11 @@
     }
 
     function hasSttConfig() {
-        return !!backendAudioState?.stt_configured;
+        return audioFlag('stt_api_key_configured', 'stt_configured');
     }
 
     function hasTtsConfig() {
-        return !!backendAudioState?.tts_configured;
+        return audioFlag('tts_api_key_configured', 'tts_configured');
     }
 
     // Load patients early so chat can be tied to a profile
@@ -643,60 +667,6 @@
     loadConfigState();
 
     messagesContainer.innerHTML = '';
-
-    function floatTo16BitPCM(float32Array) {
-        const pcm = new Int16Array(float32Array.length);
-        for (let i = 0; i < float32Array.length; i += 1) {
-            const sample = Math.max(-1, Math.min(1, float32Array[i]));
-            pcm[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-        }
-        return pcm;
-    }
-
-    function mergeAudioChunks(chunks) {
-        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-        const merged = new Float32Array(totalLength);
-        let offset = 0;
-        for (const chunk of chunks) {
-            merged.set(chunk, offset);
-            offset += chunk.length;
-        }
-        return merged;
-    }
-
-    function encodeWavBlob(chunks, sampleRate) {
-        const audioData = mergeAudioChunks(chunks);
-        const pcmData = floatTo16BitPCM(audioData);
-        const buffer = new ArrayBuffer(44 + pcmData.length * 2);
-        const view = new DataView(buffer);
-        const writeString = (offset, value) => {
-            for (let i = 0; i < value.length; i += 1) {
-                view.setUint8(offset + i, value.charCodeAt(i));
-            }
-        };
-
-        writeString(0, 'RIFF');
-        view.setUint32(4, 36 + pcmData.length * 2, true);
-        writeString(8, 'WAVE');
-        writeString(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, 1, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeString(36, 'data');
-        view.setUint32(40, pcmData.length * 2, true);
-
-        let offset = 44;
-        for (const sample of pcmData) {
-            view.setInt16(offset, sample, true);
-            offset += 2;
-        }
-
-        return new Blob([buffer], { type: 'audio/wav' });
-    }
 
     function updateLiveTranscription(finalText, interimText = '') {
         const parts = [dictationSeedText, finalText, interimText]
@@ -823,7 +793,7 @@
             replayButton.textContent = 'Repetir';
             replayButton.addEventListener('click', () => {
                 const objectUrl = URL.createObjectURL(audioBlob);
-                playAudioFromUrl(objectUrl, messageDiv, true);
+                playAudioFromUrl(objectUrl, { messageElement: messageDiv, revokeOnStop: true });
                 setTtsMode('backend', 'Audio: reproduciendo');
             });
             audioMetaDiv.appendChild(replayButton);
@@ -843,34 +813,6 @@
         }
 
         rowDiv.appendChild(messageDiv);
-
-        if (role === 'assistant' && false) {
-            const speakBtn = document.createElement('button');
-            speakBtn.className = 'speak-button';
-            speakBtn.type = 'button';
-            speakBtn.title = 'Leer en voz alta';
-            speakBtn.innerHTML = `
-                <svg class="speak-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M3 10v4c0 .55.45 1 1 1h3l4 4c.63.63 1.71.18 1.71-.71V5.71c0-.89-1.08-1.34-1.71-.71l-4 4H4c-.55 0-1 .45-1 1z"></path>
-                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"></path>
-                    <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path>
-                </svg>
-            `.trim();
-            speakBtn.addEventListener('click', async () => {
-                if (speakBtn.disabled) return;
-                speakBtn.disabled = true;
-                speakBtn.classList.add('loading');
-                speakBtn.setAttribute('aria-busy', 'true');
-                try {
-                    await speakText(text);
-                } finally {
-                    speakBtn.disabled = false;
-                    speakBtn.classList.remove('loading');
-                    speakBtn.removeAttribute('aria-busy');
-                }
-            });
-            rowDiv.appendChild(speakBtn);
-        }
 
         messagesContainer.appendChild(rowDiv);
         rowDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -924,9 +866,9 @@
                 if (!content) continue;
                 const mid = m?.message_id || '';
                 if (role === 'user') {
-                    addUserTurn(content, null, m?.tts || null, { message_id: mid });
+                    addUserTurn(content, null, getMessageAudioPayload(m), { message_id: mid });
                 } else if (role === 'assistant') {
-                    addAssistantTurn(content, null, m?.tts || null, false, { message_id: mid, role: 'assistant' });
+                    addAssistantTurn(content, null, getMessageAudioPayload(m), false, { message_id: mid, role: 'assistant' });
                 }
             }
         } catch (e) {
@@ -980,117 +922,12 @@
 
     function setTtsMode() {}
 
-    let currentTtsAudio = null;
-    let currentTtsMessageElement = null;
-    let ttsInFlight = false;
-    let lastSpokenText = '';
-    let lastSpokenAt = 0;
-
-    function stopCurrentAudioPlayback() {
-        if (!currentTtsAudio) return;
-        try { currentTtsAudio.pause(); } catch {}
-        const objectUrl = currentTtsAudio.dataset?.objectUrl;
-        if (objectUrl) {
-            try { URL.revokeObjectURL(objectUrl); } catch {}
-        }
-        if (currentTtsMessageElement) {
-            currentTtsMessageElement.classList.remove('playing');
-            currentTtsMessageElement = null;
-        }
-        currentTtsAudio = null;
-    }
-
-    function playAudioFromUrl(url, messageElement = null, revokeOnStop = false) {
-        const u = String(url || '').trim();
-        if (!u) return null;
-        stopCurrentAudioPlayback();
-        const audio = new Audio(u);
-        if (revokeOnStop) audio.dataset.objectUrl = u;
-        audio.onplay = () => {
-            if (messageElement) {
-                messageElement.classList.add('playing');
-                currentTtsMessageElement = messageElement;
-                const statusBadge = messageElement.querySelector('.message-audio-status');
-                if (statusBadge) statusBadge.textContent = 'Hablando';
-            }
-        };
-        audio.onended = () => {
-            if (revokeOnStop) {
-                try { URL.revokeObjectURL(u); } catch {}
-            }
-            if (messageElement) {
-                messageElement.classList.remove('playing');
-                const statusBadge = messageElement.querySelector('.message-audio-status');
-                if (statusBadge) statusBadge.textContent = 'Audio listo';
-            }
-            if (currentTtsMessageElement === messageElement) currentTtsMessageElement = null;
-            if (currentTtsAudio === audio) currentTtsAudio = null;
-        };
-        currentTtsAudio = audio;
-        audio.play().catch((error) => {
-            console.warn('Audio playback failed:', error);
-            if (messageElement) {
-                messageElement.classList.remove('playing');
-                const statusBadge = messageElement.querySelector('.message-audio-status');
-                if (statusBadge) statusBadge.textContent = 'Audio con error';
-            }
-            setTtsMode('error', 'Audio: no se pudo reproducir');
+    function attachAudioControls(messageElement, _text, ttsPayload = null) {
+        attachStudentAudioControls({
+            messageElement,
+            payload: ttsPayload,
+            onModeChange: (mode, text) => setTtsMode(mode, text),
         });
-        return audio;
-    }
-
-    function playAudioFromBase64(audioBase64, contentType = 'audio/mpeg', messageElement = null) {
-        if (!audioBase64) return null;
-        const binary = atob(audioBase64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i += 1) {
-            bytes[i] = binary.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: contentType });
-        const objectUrl = URL.createObjectURL(blob);
-        return playAudioFromUrl(objectUrl, messageElement, true);
-    }
-
-    function attachAudioControls(messageElement, text, ttsPayload = null, metadata = {}) {
-        if (!messageElement) return;
-        const existing = messageElement.querySelector('.message-audio-meta');
-        if (existing) existing.remove();
-        const meta = document.createElement('div');
-        meta.className = 'message-audio-meta';
-
-        const status = document.createElement('span');
-        status.className = 'message-audio-status';
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'message-audio-replay';
-
-        const messageId = metadata?.message_id || messageElement.dataset.messageId || '';
-        const role = metadata?.role || messageElement.dataset.role || 'assistant';
-        const payload = ttsPayload || {};
-
-        if (payload.audio_url) {
-            status.textContent = 'Audio listo';
-            button.textContent = 'Repetir';
-            button.addEventListener('click', () => {
-                playAudioFromUrl(payload.audio_url, messageElement, false);
-                setTtsMode('backend', 'Audio: reproduciendo');
-            });
-        } else if (payload.audio_base64) {
-            status.textContent = 'Audio listo';
-            button.textContent = 'Repetir';
-            button.addEventListener('click', () => {
-                playAudioFromBase64(payload.audio_base64, payload.content_type, messageElement);
-                setTtsMode('backend', 'Audio: reproduciendo');
-            });
-        } else {
-            // No audio attached to this message, and we intentionally do not generate new audio on demand.
-            status.textContent = 'Sin audio';
-            button.textContent = 'Sin audio';
-            button.disabled = true;
-        }
-
-        meta.append(status, button);
-        messageElement.appendChild(meta);
     }
 
     function setEncounterClosed(reason) {
@@ -1139,6 +976,17 @@
                 }
                 return;
             }
+            if (payload?.role && payload?.content) {
+                const role = String(payload.role || '').trim();
+                const ttsPayload = getMessageAudioPayload(payload);
+                const mid = payload.message_id || '';
+                if (role === 'user') {
+                    addUserTurn(payload.content, null, ttsPayload, { message_id: mid });
+                } else if (role === 'assistant') {
+                    addAssistantTurn(payload.content, null, ttsPayload, false, { message_id: mid, role: 'assistant' });
+                }
+                return;
+            }
             if (payload.type === 'encounter_finished') {
                 setEncounterClosed('Conversación finalizada');
                 return;
@@ -1162,7 +1010,7 @@
 
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message assistant-message';
-        if (ttsPayload?.audio_base64) messageDiv.classList.add('audio-linked');
+        if (ttsPayload?.audio_url || ttsPayload?.audio_base64) messageDiv.classList.add('audio-linked');
         messageDiv.dataset.messageText = text;
         if (metadata?.message_id) {
             messageDiv.dataset.messageId = metadata.message_id;
@@ -1187,146 +1035,27 @@
         messagesContainer.appendChild(rowDiv);
         rowDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
-        if (autoplay && ttsPayload?.audio_base64) {
-            playAudioFromBase64(ttsPayload.audio_base64, ttsPayload.content_type, messageDiv);
+        if (autoplay && (ttsPayload?.audio_url || ttsPayload?.audio_base64)) {
+            if (ttsPayload?.audio_url) {
+                playAudioFromUrl(ttsPayload.audio_url, { messageElement: messageDiv, revokeOnStop: false });
+            } else {
+                playAudioFromBase64(ttsPayload.audio_base64, ttsPayload.content_type, { messageElement: messageDiv });
+            }
             setTtsMode('backend', 'Audio: reproduciendo');
         }
         return messageDiv;
     }
 
-    async function speakTextViaBackend(text) {
-        if (!hasAudioConfig()) {
-            setTtsMode('error', 'Audio no configurado');
-            return;
-        }
-        if (ttsInFlight) return;
-        ttsInFlight = true;
-        try {
-            const formData = new FormData();
-            formData.append('text', text);
-            if (patientSelect?.value) formData.append('patient_id', patientSelect.value);
-            const response = await fetch('/api/tts', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Session-Id': sessionId }
-            });
-            if (!response.ok) {
-                const detail = await response.text().catch(() => '');
-                throw new Error(extractErrorMessage(detail, 'TTS failed'));
-            }
-            const payload = await response.json();
-            playAudioFromBase64(payload.audio_base64, payload.content_type);
-            setTtsMode('backend', 'Audio: reproduciendo');
-            statusDiv.textContent = 'Reproduciendo audio';
-        } catch (error) {
-            console.error('TTS error:', error);
-            statusDiv.textContent = `Error: ${error.message}`;
-            setTtsMode('error', 'Audio: error de sintesis');
-        } finally {
-            ttsInFlight = false;
-            applyAudioModeUI();
-        }
-    }
-
-    async function cacheTtsPayload(messageId, role, ttsPayload) {
-        if (!messageId || !currentEncounterId || !ttsPayload?.audio_base64) return;
-        const formData = new FormData();
-        formData.append('encounter_id', currentEncounterId);
-        formData.append('message_id', messageId);
-        formData.append('role', role);
-        formData.append('audio_base64', ttsPayload.audio_base64);
-        formData.append('content_type', ttsPayload.content_type || 'audio/mpeg');
-        const response = await fetch('/api/tts_cache', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Session-Id': sessionId }
-        });
-        if (!response.ok) {
-            const detail = await response.text().catch(() => '');
-            throw new Error(extractErrorMessage(detail, 'Cache TTS failed'));
-        }
-    }
-
-    async function requestTtsPayload(text, messageId = '', role = 'assistant') {
-        const formData = new FormData();
-        formData.append('text', text);
-        if (patientSelect?.value) formData.append('patient_id', patientSelect.value);
-        const response = await fetch('/api/tts', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Session-Id': sessionId }
-        });
-        if (!response.ok) {
-            const detail = await response.text().catch(() => '');
-            throw new Error(extractErrorMessage(detail, 'TTS failed'));
-        }
-        const payload = await response.json();
-        if (messageId) {
-            try {
-                await cacheTtsPayload(messageId, role, payload);
-            } catch (cacheError) {
-                console.warn('Failed to cache TTS payload:', cacheError);
-            }
-        }
-        return payload;
-    }
-
-    async function speakText(text) {
-        if (!text || !String(text).trim()) return;
-        const now = Date.now();
-        if (lastSpokenText === text && now - lastSpokenAt < 1200) return;
-        lastSpokenText = text;
-        lastSpokenAt = now;
-        await speakTextViaBackend(text);
-    }
-
-    function buildChatFormData(message) {
-        const chatFormData = new FormData();
-        chatFormData.append('message', message);
-        if (isAudioEnabled() && hasTtsConfig()) chatFormData.append('include_tts', 'true');
-        if (patientSelect?.value) {
-            chatFormData.append('patient_id', patientSelect.value);
-        }
-        if (currentEncounterId) {
-            chatFormData.append('encounter_id', currentEncounterId);
-        }
-        return chatFormData;
-    }
-
     async function requestChatReply(message) {
-        let chatResponse = await fetch('/api/chat', {
-            method: 'POST',
-            body: buildChatFormData(message),
-            headers: { 'X-Session-Id': sessionId }
+        return await requestChatReplyFromApi({
+            message,
+            sessionId,
+            includeTts: isAudioEnabled() && hasTtsConfig(),
+            patientId: patientSelect?.value || '',
+            encounterId: currentEncounterId,
+            ensureActiveEncounter,
+            onEncounterFinished: () => setEncounterClosed('Conversación finalizada'),
         });
-
-        if (!chatResponse.ok) {
-            const detail = await chatResponse.text().catch(() => '');
-            if (currentEncounterId && isFinishedEncounterResponse(chatResponse.status, detail)) {
-                setEncounterClosed('Conversación finalizada');
-                throw new Error('Conversación finalizada');
-            }
-            if (currentEncounterId && isMissingEncounterResponse(chatResponse.status, detail)) {
-                await ensureActiveEncounter();
-                chatResponse = await fetch('/api/chat', {
-                    method: 'POST',
-                    body: buildChatFormData(message),
-                    headers: { 'X-Session-Id': sessionId }
-                });
-            } else {
-                throw new Error(detail || 'Chat failed');
-            }
-        }
-
-        if (!chatResponse.ok) {
-            const detail = await chatResponse.text().catch(() => '');
-            if (currentEncounterId && isFinishedEncounterResponse(chatResponse.status, detail)) {
-                setEncounterClosed('Conversación finalizada');
-                throw new Error('Conversación finalizada');
-            }
-            throw new Error(detail || 'Chat failed');
-        }
-        return await chatResponse.json();
     }
 
     async function sendTextMessage() {
@@ -1385,23 +1114,18 @@
         }
 
         payload = await response.json();
-        const userText = String(payload.user_text || payload.transcript?.text || '').trim();
+        const userText = getUserText(payload);
         if (userText) addMessage(userText, 'user', null, audioBlob);
-        const replyText = String(payload.chat?.response || '').trim();
-        if (payload.chat?.message_id && payload.tts?.audio_base64) {
-            try {
-                await cacheTtsPayload(payload.chat.message_id, 'assistant', payload.tts);
-            } catch (cacheError) {
-                console.warn('Failed to cache TTS payload:', cacheError);
-            }
-        }
+        const replyText = getReplyText(payload);
+        const ttsPayload = getTtsPayload(payload);
+        const assistantMessageId = getAssistantMessageId(payload);
         if (replyText) {
             addAssistantTurn(
                 replyText,
                 payload.chat?.elapsed_time || null,
-                payload.tts,
+                ttsPayload,
                 true,
-                { message_id: payload.chat?.message_id, role: 'assistant' },
+                { message_id: assistantMessageId, role: 'assistant' },
             );
         }
         statusDiv.textContent = 'Listo';
@@ -1420,22 +1144,15 @@
 
             const chatData = await requestChatReply(userText);
             typing.remove();
-            let ttsPayload = chatData.tts || null;
-            const assistantMessageId = chatData.chat?.message_id;
-            const replyText = chatData.chat?.response || chatData.response || '';
-            if (assistantMessageId && ttsPayload?.audio_base64) {
-                try {
-                    await cacheTtsPayload(assistantMessageId, 'assistant', ttsPayload);
-                } catch (cacheError) {
-                    console.warn('Failed to cache TTS payload:', cacheError);
-                }
-            }
+            const ttsPayload = getTtsPayload(chatData);
+            const assistantMessageId = getAssistantMessageId(chatData);
+            const replyText = getReplyText(chatData);
             addAssistantTurn(
                 replyText,
                 chatData.chat?.elapsed_time || chatData.elapsed_time,
                 ttsPayload,
-                !!ttsPayload?.audio_base64,
-                { message_id: chatData.chat?.message_id, role: 'assistant' },
+                !!(ttsPayload?.audio_url || ttsPayload?.audio_base64),
+                { message_id: assistantMessageId, role: 'assistant' },
             );
             statusDiv.textContent = 'Listo';
         } catch (error) {

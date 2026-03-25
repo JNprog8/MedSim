@@ -46,10 +46,3 @@ logs/*.log
 logs/*.txt
 !logs/.keep
 
-# Storage - Datos Dinámicos (Carpetas en la raíz según docker-compose)
-encounters/*.json
-!encounters/.keep
-evaluations/*.json
-!evaluations/.keep
-audio/*/
-!audio/.keep

@@ -67,6 +67,13 @@ class Message(BaseModel):
     message_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     audio_url: Optional[str] = None
 
+class AudioAsset(BaseModel):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    encounter_id: str
+    content_type: str = "audio/wav"
+    data_base64: str
+    created_at: float = Field(default_factory=time.time)
+
 class Encounter(BaseModel):
     encounter_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     patient_id: str

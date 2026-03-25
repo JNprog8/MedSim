@@ -170,74 +170,48 @@
   function buildPayload() {
     const first = (pFirst.value || '').trim();
     const last = (pLast.value || '').trim();
-    const fullName = [first, last].filter(Boolean).join(' ').trim();
     const id = (pId.value || '').trim();
     const age = parseInt(String(pAge.value || '').trim(), 10);
     if (!id) throw new Error('ID requerido');
     if (!first) throw new Error('Nombre requerido');
     if (!Number.isFinite(age)) throw new Error('Edad requerida');
 
-    const symptoms = String(pSymptoms.value || '')
-      .split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const diagnoses = String(pDiagnoses.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const surgeries = String(pSurgeries.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const allergies = String(pAllergies.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const medications = String(pMedications.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const labs = String(pLabs.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const imaging = String(pImaging.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const notes = String(pNotes.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const differentials = String(pTrueDiffs.value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const knownHistory = {};
-    String(pKnownHistory.value || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean).forEach((line) => {
-      const idx = line.indexOf(':');
-      if (idx === -1) return;
-      const key = line.slice(0, idx).trim();
-      const value = line.slice(idx + 1).trim();
-      if (key) knownHistory[key] = value;
-    });
-
     const responseProfile = pResponseStyle?.value || 'Calmado';
-    const trueMain = (pTrueMain.value || '').trim();
-    const truePlan = (pTruePlan.value || '').trim();
-    const trueRx = (pTrueRx.value || '').trim();
-    const triageShort = (pTriage.value || '').trim() || (pChief.value || '').slice(0, 70);
 
     return {
       id,
-      name: first,
+      first_name: first,
+      last_name: last,
       age,
       region: (pRegion.value || 'AMBA').trim() || 'AMBA',
-      administrative: {
-        full_name: fullName || first,
-        date_of_birth: (pDob.value || '').trim() || null,
-        dni: (pDni.value || '').trim() || null,
-        insurance: (pInsurance.value || '').trim() || null,
-        sex: (pSex.value || '').trim() || null,
-        occupation: (pOccupation.value || '').trim() || null,
-      },
-      triage: { reference_short: triageShort || null },
-      institutional_history: { diagnoses, surgeries, allergies, medications_current: medications },
-      recent_studies: { labs, imaging, notes },
+      date_of_birth: (pDob.value || '').trim() || null,
+      dni: (pDni.value || '').trim() || null,
+      insurance: (pInsurance.value || '').trim() || null,
+      sex: (pSex.value || '').trim() || null,
+      occupation: (pOccupation.value || '').trim() || null,
+      triage_short: (pTriage.value || '').trim() || (pChief.value || '').slice(0, 70),
       chief_complaint: (pChief.value || '').trim() || 'Hola, doc. Vine a la guardia.',
       what_they_feel: (pFeel.value || '').trim() || 'Me siento mal.',
-      symptoms_reported: symptoms,
-      known_medical_history: knownHistory,
+      symptoms_text: String(pSymptoms.value || ''),
+      known_history_text: String(pKnownHistory.value || ''),
+      diagnoses_text: String(pDiagnoses.value || ''),
+      surgeries_text: String(pSurgeries.value || ''),
+      allergies_text: String(pAllergies.value || ''),
+      medications_text: String(pMedications.value || ''),
+      labs_text: String(pLabs.value || ''),
+      imaging_text: String(pImaging.value || ''),
+      notes_text: String(pNotes.value || ''),
       unknown_real_problem: (pSecret.value || '(Completar)').trim() || '(Completar)',
       doctor_display_real_problem: (pDisplay.value || '(Completar)').trim() || '(Completar)',
-      true_case: trueMain || truePlan || differentials.length || trueRx ? {
-        diagnostico_principal: trueMain || '(Completar)',
-        diferenciales: differentials,
-        indicaciones_plan: truePlan || '(Completar)',
-        receta: trueRx || null,
-      } : null,
+      true_main: (pTrueMain.value || '').trim(),
+      true_differentials_text: String(pTrueDiffs.value || ''),
+      true_plan: (pTruePlan.value || '').trim(),
+      true_rx: (pTrueRx.value || '').trim(),
       personality: pPersonality?.value || 'Neutral',
       language_level: pLanguageLevel?.value || 'B',
       medical_history_recall: pMemoryLevel?.value || 'Low',
       cognitive_confusion: pCognitive?.value || 'Normal',
       speaking_style: pSpeakingStyle?.value || 'rioplatense',
-      behavior_profile: responseProfile,
       response_style: responseProfile,
     };
   }

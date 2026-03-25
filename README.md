@@ -8,7 +8,6 @@ Sandbox local para practicar entrevistas médico-paciente con un paciente simula
 ## Qué incluye
 
 - App `FastAPI` con UI web.
-- Pacientes de ejemplo en `patients/`.
 - Panel clínico (ficha) y checklist manual `SEGUE`.
 - Soporte para backends LLM OpenAI-compatible.
 - STT via API (OpenAI-compatible o Gemini nativo según `STT_API_URL`).
@@ -20,11 +19,6 @@ Sandbox local para practicar entrevistas médico-paciente con un paciente simula
 MedSim/
 |- backend/
 |- frontend/
-|- static/
-|- patients/
-|- students/
-|- audio/
-|- encounters/
 |- Dockerfile
 |- docker-compose.yml
 |- requirements.txt

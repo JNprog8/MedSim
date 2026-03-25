@@ -4,13 +4,7 @@ WORKDIR /app
 
 COPY requirements.txt ./requirements.txt
 COPY backend ./backend/
-COPY static ./static/
 COPY frontend ./frontend/
-COPY patients ./patients/
-COPY students ./students/
-COPY evaluations ./evaluations/
-COPY encounters ./encounters/
-COPY audio ./audio/
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 

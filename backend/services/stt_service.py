@@ -13,6 +13,14 @@ class STTService:
         self.api_url = settings.STT_API_URL
         self.api_key = settings.STT_API_KEY
         self.model = settings.STT_MODEL
+        logger.info(
+            "STT service initialized url=%s model=%s key_prefix=%s key_suffix=%s key_len=%s",
+            self.api_url,
+            self.model,
+            (self.api_key or "")[:8],
+            (self.api_key or "")[-6:],
+            len(self.api_key or ""),
+        )
 
     def _is_gemini_api_url(self) -> bool:
         return "generativelanguage.googleapis.com" in (self.api_url or "").lower()
@@ -30,9 +38,18 @@ class STTService:
             form.add_field("file", audio_bytes, filename=filename, content_type=content_type)
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(f"{base_url}/audio/transcriptions", data=form) as response:
+                async with session.post(f"{base_url}/audio/transcriptions", headers=headers, data=form) as response:
                     if response.status >= 400:
                         body = await response.text()
+                        logger.error(
+                            "STT request failed status=%s url=%s model=%s key_prefix=%s key_len=%s body=%s",
+                            response.status,
+                            f"{base_url}/audio/transcriptions",
+                            self.model,
+                            (self.api_key or "")[:8],
+                            len(self.api_key or ""),
+                            body[:500],
+                        )
                         raise HTTPException(status_code=response.status, detail=body)
                     payload = await response.json()
                     return {"text": payload.get("text", ""), "model": self.model}
@@ -52,6 +69,14 @@ class STTService:
                 async with session.post(url, json=payload) as response:
                     if response.status >= 400:
                         body = await response.text()
+                        logger.error(
+                            "Gemini STT request failed status=%s model=%s key_prefix=%s key_len=%s body=%s",
+                            response.status,
+                            self.model,
+                            (self.api_key or "")[:8],
+                            len(self.api_key or ""),
+                            body[:500],
+                        )
                         raise HTTPException(status_code=response.status, detail=body)
                     payload = await response.json()
                     text = self._extract_gemini_text(payload)

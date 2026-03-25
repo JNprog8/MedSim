@@ -1,31 +1,13 @@
 (function () {
-  const segueCriteria = [
-    { id: '1', area: 'Conectar con paciente', label: 'Saluda adecuadamente al paciente' },
-    { id: '2', area: 'Conectar con paciente', label: 'Establece el motivo de consulta' },
-    { id: '3', area: 'Conectar con paciente', label: 'Establece agenda y secuencia de problemas' },
-    { id: '4', area: 'Conectar con paciente', label: 'Establece conexion personal con el paciente mas alla de los problemas medicos' },
-    { id: '5', area: 'Conectar con paciente', label: 'Genera privacidad. Si va a haber interrupcion, lo anticipa' },
-    { id: '6', area: 'Obtener informacion', label: 'Recoge la perspectiva del paciente respecto a su problema de salud, sus ideas y dudas' },
-    { id: '7', area: 'Obtener informacion', label: 'Explora signos y sintomas, factores fisicos y fisiologicos' },
-    { id: '8', area: 'Obtener informacion', label: 'Explora factores psicosociales, situacion familiar, relaciones y estres' },
-    { id: '9', area: 'Obtener informacion', label: 'Indaga sobre tratamientos previos o historia del padecimiento' },
-    { id: '10', area: 'Obtener informacion', label: 'Indaga como los problemas de salud afectan la vida del paciente' },
-    { id: '11', area: 'Obtener informacion', label: 'Indaga estrategias de prevencion y problemas del estilo de vida' },
-    { id: '12', area: 'Obtener informacion', label: 'Hace preguntas directas. Evita preguntas directivas o capciosas' },
-    { id: '13', area: 'Obtener informacion', label: 'Da tiempo para que el paciente hable, no interrumpe' },
-    { id: '14', area: 'Obtener informacion', label: 'Escucha. Presta toda la atencion al paciente. Parafrasea y/o repregunta' },
-    { id: '15', area: 'Obtener informacion', label: 'Chequea y/o clarifica informacion' },
-    { id: '16', area: 'Dar informacion', label: 'Explica la justificacion del uso de examenes complementarios o procedimientos' },
-    { id: '17', area: 'Dar informacion', label: 'Ensenia al paciente sobre su propio cuerpo y situacion' },
-    { id: '18', area: 'Dar informacion', label: 'Alienta al paciente para que realice preguntas' },
-    { id: '19', area: 'Dar informacion', label: 'Se adapta al nivel de comprension del paciente' },
-    { id: '20', area: 'Comprension de la perspectiva del paciente', label: 'Reconoce los logros, el progreso y los desafios del paciente' },
-    { id: '21', area: 'Comprension de la perspectiva del paciente', label: 'Reconoce el tiempo de espera' },
-    { id: '22', area: 'Comprension de la perspectiva del paciente', label: 'Expresa cuidado, preocupacion y empatia' },
-    { id: '23', area: 'Comprension de la perspectiva del paciente', label: 'Mantiene un tono respetuoso' },
-    { id: '24', area: 'Cierre', label: 'Pregunta si hay algo mas que quiera discutir o preguntar' },
-    { id: '25', area: 'Cierre', label: 'Revisa nuevos pasos a seguir' },
-  ];
+  const EvaluatorEncounterContract = window.MedSimEvaluatorEncounterContract;
+  const EvaluatorEncounterTranscript = window.MedSimEvaluatorEncounterTranscript;
+  const {
+    buildEmptyEvaluation: buildInitialEvaluation,
+    fetchSegueCatalog,
+    getMessageAudioPayload,
+  } = EvaluatorEncounterContract;
+  const { createTranscriptController } = EvaluatorEncounterTranscript;
+  let segueCriteria = [];
 
   const sessionIdKey = 'medsim_session_id';
   const sessionId = (() => {
@@ -40,22 +22,24 @@
   const btnOpenStudent = document.getElementById('btn-open-student');
   const btnFinish = document.getElementById('btn-finish');
   const btnActivate = document.getElementById('btn-activate');
+  const btnDownloadPdf = document.getElementById('btn-download-pdf');
   const statusEl = document.getElementById('status');
 
   const transcriptEl = document.getElementById('transcript');
   const segueWrap = document.getElementById('segue-table-wrap');
+  const hdrPatient = document.getElementById('hdr-patient');
   const hdrStudent = document.getElementById('hdr-student');
   const hdrStudentId = document.getElementById('hdr-student-id');
   const hdrEvaluator = document.getElementById('hdr-evaluator');
+  const transcriptController = createTranscriptController({ transcriptEl });
 
   let encounterId = '';
   let encounterFinishedAt = null;
+  let encounterMeta = null;
   let ws = null;
   let pingTimer = null;
   let evalSaveTimer = null;
   let currentEvaluation = null;
-  let currentTtsAudio = null;
-  let currentTtsMessageElement = null;
   let finishingOnExit = false;
   let allowExitWithoutPrompt = false;
 
@@ -83,108 +67,6 @@
     if (btnActivate) btnActivate.innerHTML = '<span class="material-symbols-outlined">play_circle</span><span>Activar conversacion</span>';
   }
 
-  function stopCurrentAudioPlayback() {
-    if (!currentTtsAudio) return;
-    try { currentTtsAudio.pause(); } catch {}
-    const objectUrl = currentTtsAudio.dataset?.objectUrl;
-    if (objectUrl) {
-      try { URL.revokeObjectURL(objectUrl); } catch {}
-    }
-    if (currentTtsMessageElement) {
-      currentTtsMessageElement.classList.remove('playing');
-      currentTtsMessageElement = null;
-    }
-    currentTtsAudio = null;
-  }
-
-  function playAudioFromUrl(url, messageElement = null, revokeOnStop = false) {
-    const u = String(url || '').trim();
-    if (!u) return null;
-    stopCurrentAudioPlayback();
-    const audio = new Audio(u);
-    if (revokeOnStop) audio.dataset.objectUrl = u;
-    audio.onplay = () => {
-      if (messageElement) {
-        messageElement.classList.add('playing');
-        currentTtsMessageElement = messageElement;
-      }
-    };
-    audio.onended = () => {
-      if (messageElement) messageElement.classList.remove('playing');
-      if (revokeOnStop) {
-        try { URL.revokeObjectURL(u); } catch {}
-      }
-      currentTtsAudio = null;
-      currentTtsMessageElement = null;
-    };
-    audio.play().catch(() => {});
-    currentTtsAudio = audio;
-    return audio;
-  }
-
-  function playAudioFromBase64(audioBase64, contentType = 'audio/mpeg', messageElement = null) {
-    if (!audioBase64) return null;
-    const binary = atob(audioBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], { type: contentType });
-    const objectUrl = URL.createObjectURL(blob);
-    return playAudioFromUrl(objectUrl, messageElement, true);
-  }
-
-  function attachAudioControls(messageElement, text, ttsPayload = null) {
-    if (!messageElement) return;
-    const existing = messageElement.querySelector('.message-audio-meta');
-    if (existing) existing.remove();
-    const meta = document.createElement('div');
-    meta.className = 'message-audio-meta';
-
-    const status = document.createElement('span');
-    status.className = 'message-audio-status';
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'message-audio-replay';
-
-    const payload = ttsPayload || {};
-    if (payload.audio_url) {
-      status.textContent = 'Audio listo';
-      button.textContent = 'Reproducir';
-      button.addEventListener('click', () => playAudioFromUrl(payload.audio_url, messageElement, false));
-    } else if (payload.audio_base64) {
-      status.textContent = 'Audio listo';
-      button.textContent = 'Reproducir';
-      button.addEventListener('click', () => playAudioFromBase64(payload.audio_base64, payload.content_type, messageElement));
-    } else {
-      status.textContent = 'Sin audio';
-      button.textContent = 'Sin audio';
-      button.disabled = true;
-    }
-
-    meta.append(status, button);
-    messageElement.appendChild(meta);
-  }
-
-  function addTranscript(role, content, ttsPayload = null, messageId = '') {
-    const plainContent = content || '';
-    const div = document.createElement('div');
-    div.className = `tmsg ${role === 'user' ? 'user' : 'assistant'}`;
-    if (messageId) div.dataset.messageId = messageId;
-    div.dataset.role = role === 'user' ? 'user' : 'assistant';
-    div.dataset.messageText = plainContent;
-    div.innerHTML = `<div class="tmeta">${role === 'user' ? 'Estudiante' : 'Paciente'}</div><div>${escapeHtml(plainContent)}</div>`;
-    attachAudioControls(div, plainContent, ttsPayload);
-    transcriptEl.appendChild(div);
-  }
-
-  function updateTranscriptAudio(messageId, ttsPayload) {
-    if (!messageId) return;
-    const selector = `[data-message-id="${messageId}"]`;
-    const messageEl = transcriptEl.querySelector(selector);
-    if (!messageEl) return;
-    const text = messageEl.dataset.messageText || '';
-    attachAudioControls(messageEl, text, ttsPayload);
-  }
-
   async function loadEncounterHistory() {
     if (!encounterId) return;
     try {
@@ -192,10 +74,10 @@
       if (!resp.ok) return;
       const data = await resp.json().catch(() => ({}));
       const visible = Array.isArray(data.visible_messages) ? data.visible_messages : [];
-      transcriptEl.innerHTML = '';
+      transcriptController.clearTranscript();
       for (const m of visible) {
         if (!m?.content) continue;
-        addTranscript(m.role, m.content, m.tts, m.message_id || '');
+        transcriptController.addTranscript(m.role, m.content, getMessageAudioPayload(m), m.message_id || '');
       }
     } catch {}
   }
@@ -228,29 +110,29 @@
       if (payload.type === 'snapshot') {
         setEncounterFinished(payload.finished_at);
         const messages = Array.isArray(payload.messages) ? payload.messages : [];
-        const existingIds = new Set(
-          Array.from(transcriptEl.querySelectorAll('[data-message-id]'))
-            .map((el) => el?.dataset?.messageId || '')
-            .filter(Boolean),
-        );
+        const existingIds = transcriptController.collectMessageIds();
         for (const m of messages) {
           if (!m?.content) continue;
           const mid = m.message_id || '';
           if (mid && existingIds.has(mid)) continue;
-          addTranscript(m.role, m.content, m.tts, mid);
+          transcriptController.addTranscript(m.role, m.content, getMessageAudioPayload(m), mid);
         }
+        return;
+      }
+      if (payload?.role && payload?.content) {
+        transcriptController.addTranscript(payload.role, payload.content, getMessageAudioPayload(payload), payload.message_id || '');
         return;
       }
       if (payload.type === 'message_added') {
         const e = payload.event || {};
         if (!e.content) return;
-        addTranscript(e.role, e.content, e.tts, e.message_id || '');
+        transcriptController.addTranscript(e.role, e.content, getMessageAudioPayload(e), e.message_id || '');
         return;
       }
       if (payload.type === 'tts_update') {
         const e = payload.event || {};
         if (!e?.message_id || !e?.tts) return;
-        updateTranscriptAudio(e.message_id, e.tts);
+        transcriptController.updateTranscriptAudio(e.message_id, e.tts);
         return;
       }
       if (payload.type === 'encounter_finished') {
@@ -266,18 +148,29 @@
   }
 
   function buildEmptyEvaluation() {
-    const items = [];
-    for (const c of segueCriteria) items.push({ id: c.id, value: 'nc', notes: '' });
-    return {
-      id: '',
-      encounter_id: encounterId,
-      patient_id: '',
-      student_id: '',
-      student_name: '',
-      student_identifier: '',
-      evaluator_name: '',
-      items,
-    };
+    return buildInitialEvaluation({
+      criteria: segueCriteria,
+      encounterId,
+      encounterMeta,
+    });
+  }
+
+  function syncEvaluationMetadata() {
+    if (!currentEvaluation) return;
+    const studentMeta = encounterMeta?.student || {};
+    currentEvaluation.encounter_id = encounterId;
+    currentEvaluation.patient_id = currentEvaluation.patient_id || encounterMeta?.patient_id || '';
+    currentEvaluation.student_id = currentEvaluation.student_id || encounterMeta?.student_id || '';
+    currentEvaluation.student_name = currentEvaluation.student_name || studentMeta.name || '';
+    currentEvaluation.student_identifier = currentEvaluation.student_identifier || studentMeta.student_identifier || '';
+    currentEvaluation.evaluator_name = currentEvaluation.evaluator_name || encounterMeta?.evaluator_name || '';
+  }
+
+  function renderEvaluationHeader() {
+    if (hdrPatient) hdrPatient.textContent = encounterMeta?.patient_name || encounterMeta?.patient_id || '-';
+    if (hdrStudent) hdrStudent.textContent = currentEvaluation?.student_name || encounterMeta?.student?.name || '-';
+    if (hdrStudentId) hdrStudentId.textContent = currentEvaluation?.student_identifier || encounterMeta?.student?.student_identifier || '-';
+    if (hdrEvaluator) hdrEvaluator.textContent = currentEvaluation?.evaluator_name || encounterMeta?.evaluator_name || '-';
   }
 
   function scheduleSaveEvaluation() {
@@ -289,14 +182,16 @@
 
   async function saveEvaluationNow() {
     if (!currentEvaluation) return;
-    currentEvaluation.encounter_id = encounterId;
+    syncEvaluationMetadata();
     const resp = await fetch('/api/evaluations/', {
       method: 'POST',
       headers: headersJson(),
       body: JSON.stringify(currentEvaluation),
     });
+    if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json().catch(() => ({}));
     if (data?.evaluation) currentEvaluation = data.evaluation;
+    renderEvaluationHeader();
   }
 
   function renderSegueTable() {
@@ -401,13 +296,24 @@
   }
 
   async function loadEvaluation() {
-    const resp = await fetch(`/api/evaluations/?encounter_id=${encodeURIComponent(encounterId)}`, { headers: { 'X-Session-Id': sessionId } });
+    const resp = await fetch(`/api/evaluations/${encodeURIComponent(encounterId)}/view_model`, { headers: { 'X-Session-Id': sessionId } });
     if (!resp.ok) return;
     const data = await resp.json().catch(() => ({}));
+    segueCriteria = Array.isArray(data?.criteria) ? data.criteria : segueCriteria;
     currentEvaluation = data?.evaluation || buildEmptyEvaluation();
-    if (hdrStudent) hdrStudent.textContent = currentEvaluation.student_name || '';
-    if (hdrStudentId) hdrStudentId.textContent = currentEvaluation.student_identifier || '';
-    if (hdrEvaluator) hdrEvaluator.textContent = currentEvaluation.evaluator_name || '';
+    encounterMeta = {
+      ...(encounterMeta || {}),
+      patient_id: data?.patient_id || encounterMeta?.patient_id || '',
+      patient_name: data?.patient_name || encounterMeta?.patient_name || '',
+      student_id: data?.student_id || encounterMeta?.student_id || '',
+      student: {
+        ...(encounterMeta?.student || {}),
+        name: data?.student_name || encounterMeta?.student?.name || '',
+        student_identifier: data?.student_identifier || encounterMeta?.student?.student_identifier || '',
+      },
+      evaluator_name: data?.evaluator_name || encounterMeta?.evaluator_name || '',
+    };
+    renderEvaluationHeader();
     renderSegueTable();
   }
 
@@ -420,6 +326,27 @@
     const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/`, { headers: { 'X-Session-Id': sessionId } });
     if (!resp.ok) throw new Error(await resp.text());
     const meta = await resp.json().catch(() => ({}));
+    let studentMeta = null;
+    if (meta.student_id) {
+      try {
+        const studentResp = await fetch(`/api/students/${encodeURIComponent(meta.student_id)}/`, { headers: { 'X-Session-Id': sessionId } });
+        if (studentResp.ok) studentMeta = await studentResp.json().catch(() => null);
+      } catch {}
+    }
+    let patientMeta = null;
+    if (meta.patient_id) {
+      try {
+        const patientResp = await fetch(`/api/patients/${encodeURIComponent(meta.patient_id)}/`, { headers: { 'X-Session-Id': sessionId } });
+        if (patientResp.ok) patientMeta = await patientResp.json().catch(() => null);
+      } catch {}
+    }
+    encounterMeta = {
+      patient_id: meta.patient_id || '',
+      patient_name: patientMeta?.name || '',
+      student_id: meta.student_id || '',
+      student: studentMeta,
+      evaluator_name: meta.evaluator_name || '',
+    };
     setEncounterFinished(meta.finished_at);
     if (btnFinish) btnFinish.disabled = !!meta.finished_at;
 
@@ -460,6 +387,25 @@
     if (!encounterId) return;
     const url = `/frontend/student?session_id=${encodeURIComponent(sessionId)}&encounter_id=${encodeURIComponent(encounterId)}`;
     window.open(url, '_blank');
+  });
+
+  btnDownloadPdf?.addEventListener('click', async () => {
+    if (!encounterId) return;
+    try {
+      setStatus('Preparando PDF...');
+      await saveEvaluationNow();
+      const link = document.createElement('a');
+      link.href = `/api/evaluations/${encodeURIComponent(encounterId)}/pdf?ts=${Date.now()}`;
+      link.download = `evaluacion-segue-${encounterId}.pdf`;
+      link.rel = 'noopener';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setStatus('PDF descargado');
+    } catch (e) {
+      setStatus(`No se pudo descargar el PDF: ${String(e?.message || e)}`);
+    }
   });
 
   btnActivate?.addEventListener('click', async () => {
@@ -507,9 +453,14 @@
   if (!enc) {
     window.location.href = '/frontend/evaluator';
   } else {
-    joinEncounter(enc).catch((e) => {
-      setStatus(String(e?.message || e));
-    });
+    fetchSegueCatalog(sessionId)
+      .then((criteria) => {
+        segueCriteria = criteria;
+        return joinEncounter(enc);
+      })
+      .catch((e) => {
+        setStatus(String(e?.message || e));
+      });
   }
 
   window.addEventListener('pagehide', () => {

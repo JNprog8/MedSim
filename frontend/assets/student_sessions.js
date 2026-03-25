@@ -12,7 +12,6 @@
 
   let allEncounters = [];
   let currentPage = 1;
-  let mapsCache = { pMap: new Map(), sMap: new Map() };
 
   function setSessionListStatus(text) {
     if (sessionListStatus) sessionListStatus.textContent = text || '';
@@ -52,30 +51,12 @@
     window.location.href = `/frontend/student?session_id=${encodeURIComponent(sid)}&encounter_id=${encodeURIComponent(enc)}`;
   }
 
-  async function loadMaps() {
-    const [patientsResp, studentsResp] = await Promise.all([
-      fetch('/api/patients/').then((r) => r.json()).catch(() => ({})),
-      fetch('/api/students/').then((r) => r.json()).catch(() => ({})),
-    ]);
-    const pMap = new Map();
-    const patients = Array.isArray(patientsResp) ? patientsResp : (patientsResp.patients || []);
-    for (const p of patients) {
-      pMap.set(String(p.id), `${p.name} (${p.age})`);
-    }
-    const sMap = new Map();
-    const students = Array.isArray(studentsResp) ? studentsResp : (studentsResp.students || []);
-    for (const s of students) {
-      sMap.set(String(s.id), `${s.name}${s.student_identifier ? ` (${s.student_identifier})` : ''}`);
-    }
-    return { pMap, sMap };
-  }
-
   function renderSessionList() {
     if (!sessionList) return;
     const term = String(searchInput?.value || '').trim().toLowerCase();
     const filtered = allEncounters.filter((encounter) => {
-      const student = mapsCache.sMap.get(String(encounter.student_id || '')) || String(encounter.student_id || '-');
-      const patient = mapsCache.pMap.get(String(encounter.patient_id || '')) || String(encounter.patient_id || '-');
+      const student = String(encounter.student_label || '').trim() || String(encounter.student_id || '-');
+      const patient = String(encounter.patient_label || '').trim() || String(encounter.patient_id || '-');
       const evaluator = String(encounter.evaluator_name || '-');
       const haystack = `${student} ${patient} ${evaluator}`.toLowerCase();
       return !term || haystack.includes(term);
@@ -98,16 +79,16 @@
 
     sessionList.innerHTML = paged.map((encounter) => {
       const encId = String(encounter.encounter_id || '');
-      const student = mapsCache.sMap.get(String(encounter.student_id || '')) || String(encounter.student_id || '-');
-      const patient = mapsCache.pMap.get(String(encounter.patient_id || '')) || String(encounter.patient_id || '-');
+      const student = String(encounter.student_label || '').trim() || String(encounter.student_id || '-');
+      const patient = String(encounter.patient_label || '').trim() || String(encounter.patient_id || '-');
       const evaluator = String(encounter.evaluator_name || '-');
-      const finished = encounter.finished_at != null;
+      const finished = encounter.finished ?? (encounter.finished_at != null);
       return `
         <tr data-encounter-id="${escapeHtml(encId)}">
           <td><div class="cell-title">${escapeHtml(student)}</div></td>
           <td><div class="cell-meta">${escapeHtml(patient)}</div></td>
           <td><div class="cell-meta">${escapeHtml(evaluator)}</div></td>
-          <td><span class="chip ${finished ? 'finished' : ''}">${finished ? 'Finalizada' : 'Activa'}</span></td>
+          <td><span class="chip ${finished ? 'finished' : ''}">${escapeHtml(encounter.status_label || (finished ? 'Finalizada' : 'Activa'))}</span></td>
           <td style="text-align:right;"><button class="btn" data-join-session type="button">Entrar</button></td>
         </tr>
       `;
@@ -134,7 +115,6 @@
     setSessionListStatus('Cargando sesiones...');
     sessionList.innerHTML = '<tr><td colspan="5">Cargando sesiones...</td></tr>';
 
-    mapsCache = await loadMaps().catch(() => ({ pMap: new Map(), sMap: new Map() }));
     const resp = await fetch('/api/encounters_public').then((r) => r.json()).catch(() => ({}));
     allEncounters = Array.isArray(resp) ? resp : (Array.isArray(resp.encounters) ? resp.encounters : []);
     renderSessionList();
