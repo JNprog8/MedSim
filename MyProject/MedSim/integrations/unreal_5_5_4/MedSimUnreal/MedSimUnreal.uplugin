@@ -1,0 +1,18 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "MedSim Unreal",
+  "Description": "Cliente Unreal para integrar MedSim con audio, chat y WebSocket.",
+  "Category": "Networking",
+  "CreatedBy": "Codex",
+  "CanContainContent": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "MedSimUnreal",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+	"version": 1,
+	"changelists": [
+		{
+			"guid": "00000000000000000000000000000000",
+			"description": "Lista de cambios no controlados predeterminada",
+			"files": [
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/StarterContent/Architecture/Floor_400x400.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/FirstPerson/Blueprints/WBP_MedSimTest.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/FirstPerson/Blueprints/Submix_Microfono.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/FirstPerson/Blueprints/BP_FirstPersonCharacter.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/1/RN/55P1SMQLAF7OK6300D5I8N.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/C/ZU/PDQ0AB8RLNMVID876FD49G.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/6/0Z/5RQIHCZ9W3UXRGL4LTLQAK.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/C/VO/VMN4G7K3NKKV6F8HTPHHDB.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/E/MX/R1GV431P5FDO08OFULRA01.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/8/Z7/W1SXRCM1KAKBJOIZDLHZ47.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/0/CL/381LM03PFI8AF9NED1SEV2.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/0/WB/V4ALNTJYOVWM8BU452CKV5.uasset",
+				"C:/Users/Maxi/Documents/Unreal Projects/MyProject/Content/__ExternalActors__/FirstPerson/Maps/FirstPersonMap/5/8C/EAHCBN229IT8APJO305AH5.uasset"
+			]
+		}
+	]
+}

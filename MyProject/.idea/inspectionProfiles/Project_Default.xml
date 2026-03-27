@@ -1,0 +1,22 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="fastapi" />
+          <option value="python-multipart" />
+          <option value="uvicorn" />
+          <option value="websockets" />
+          <option value="jinja2" />
+          <option value="aiohttp" />
+          <option value="openai" />
+          <option value="python-dotenv" />
+          <option value="motor" />
+          <option value="pydantic-settings" />
+          <option value="pydantic" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
