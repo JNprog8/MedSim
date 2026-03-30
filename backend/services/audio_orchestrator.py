@@ -1,7 +1,11 @@
 import base64
+import logging
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, UploadFile
 from backend.services.realtime.hub import EncounterRealtimeHub
+from backend.services.audio_input_mode import AudioInputMode, resolve_audio_input_mode
+
+logger = logging.getLogger(__name__)
 
 class AudioOrchestrator:
     def __init__(
@@ -109,18 +113,105 @@ class AudioOrchestrator:
         }
 
     async def process_audio_input(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
-        audio_bytes = await audio_file.read()
-        content_type = audio_file.content_type or "audio/wav"
-        user_audio = await self.audio_service.save_audio(
-            encounter_id=encounter_id,
-            audio_bytes=audio_bytes,
-            content_type=content_type,
+        audio_payload = await self._store_uploaded_audio(encounter_id, audio_file)
+        stt_result = await self.stt_service.transcribe_audio(
+            audio_payload["audio_bytes"],
+            content_type=audio_payload["content_type"],
+            filename=audio_payload["filename"],
         )
-        stt_result = await self.stt_service.transcribe_audio(audio_bytes, content_type=audio_file.content_type)
         user_text = stt_result.get("text", "")
         return await self.process_text_input(
             encounter_id,
             user_text,
             include_tts=True,
-            user_audio_url=f"/api/audio/{user_audio.id}",
+            user_audio_url=audio_payload["audio_url"],
         )
+
+    async def process_audio_input_unreal(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
+        try:
+            await self._store_uploaded_audio(encounter_id, audio_file)
+            return {"ok": True}
+        except HTTPException:
+            logger.exception(
+                "Unreal audio upload failed encounter_id=%s filename=%s content_type=%s",
+                encounter_id,
+                audio_file.filename,
+                audio_file.content_type,
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Unexpected Unreal audio upload failure encounter_id=%s filename=%s content_type=%s",
+                encounter_id,
+                audio_file.filename,
+                audio_file.content_type,
+            )
+            raise HTTPException(status_code=500, detail="Failed to store Unreal audio")
+
+    async def process_audio_input_by_mode(
+        self,
+        encounter_id: str,
+        audio_file: UploadFile,
+        mode: str | None = None,
+    ) -> Dict[str, Any]:
+        resolved_mode = resolve_audio_input_mode(mode)
+        if resolved_mode == AudioInputMode.UNREAL:
+            return await self.process_audio_input_unreal(encounter_id, audio_file)
+        return await self.process_audio_input(encounter_id, audio_file)
+
+    async def append_external_message(
+        self,
+        encounter_id: str,
+        role: str,
+        text: str,
+        audio_url: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        encounter = await self.encounter_service.get_encounter(encounter_id)
+        if not encounter:
+            raise HTTPException(status_code=404, detail="Encounter not found")
+        if encounter.finished_at is not None:
+            raise HTTPException(status_code=409, detail="Encounter finished")
+
+        normalized_role = (role or "").strip().lower()
+        if normalized_role not in {"user", "assistant"}:
+            raise HTTPException(status_code=400, detail="Unsupported role")
+
+        content = (text or "").strip()
+        if not content:
+            raise HTTPException(status_code=400, detail="message is required")
+
+        message = await self.encounter_service.add_message_to_history(
+            encounter_id,
+            normalized_role,
+            content,
+            audio_url=audio_url,
+        )
+        await self.realtime_hub.broadcast(encounter_id, message.model_dump())
+        return {
+            "ok": True,
+            "encounter_id": encounter_id,
+            "message": message.model_dump(),
+        }
+
+    async def _store_uploaded_audio(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
+        encounter = await self.encounter_service.get_encounter(encounter_id)
+        if not encounter:
+            raise HTTPException(status_code=404, detail="Encounter not found")
+
+        audio_bytes = await audio_file.read()
+        if not audio_bytes:
+            raise HTTPException(status_code=400, detail="Audio file is empty")
+
+        content_type = audio_file.content_type or "audio/wav"
+        audio_asset = await self.audio_service.save_audio(
+            encounter_id=encounter_id,
+            audio_bytes=audio_bytes,
+            content_type=content_type,
+        )
+        return {
+            "audio_asset": audio_asset,
+            "audio_bytes": audio_bytes,
+            "audio_url": f"/api/audio/{audio_asset.id}",
+            "content_type": content_type,
+            "filename": audio_file.filename or "audio.wav",
+        }

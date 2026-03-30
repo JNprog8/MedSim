@@ -53,6 +53,10 @@ async def student_page():
 async def student_join_page():
     return FileResponse(_frontend_file("student_join.html"))
 
+@app.get("/frontend/unreal_join")
+async def unreal_join_page():
+    return FileResponse(_frontend_file("unreal_join.html"))
+
 @app.get("/frontend/student_sessions")
 async def student_sessions_page():
     return FileResponse(_frontend_file("student_sessions.html"))
@@ -64,6 +68,10 @@ async def evaluator_page():
 @app.get("/frontend/evaluator_encounter")
 async def evaluator_encounter_page():
     return FileResponse(_frontend_file("evaluator_encounter.html"))
+
+@app.get("/frontend/unreal")
+async def unreal_page():
+    return FileResponse(_frontend_file("unreal.html"))
 
 @app.get("/frontend/patients")
 async def patients_page():
