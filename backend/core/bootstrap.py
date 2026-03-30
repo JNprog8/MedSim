@@ -1,4 +1,7 @@
-from backend.domain.models import PatientProfile, StudentProfile
+import time
+
+from backend.domain.models import Encounter, PatientProfile, StudentProfile
+from backend.persistence.encounter_repository import EncounterRepository
 from backend.persistence.patient_repository import PatientRepository
 from backend.persistence.student_repository import StudentRepository
 
@@ -59,13 +62,46 @@ DEMO_STUDENT = StudentProfile(
     metadata={"source": "bootstrap_demo"},
 )
 
+DEMO_ENCOUNTER_ID = "enc_demo_activo"
+
 
 async def bootstrap_demo_data():
     patient_repo = PatientRepository()
     student_repo = StudentRepository()
+    encounter_repo = EncounterRepository()
 
     await patient_repo.upsert(DEMO_PATIENT)
     print(f"Paciente demo asegurado: {DEMO_PATIENT.name} ({DEMO_PATIENT.id})")
 
     await student_repo.upsert(DEMO_STUDENT)
     print(f"Alumno demo asegurado: {DEMO_STUDENT.name} ({DEMO_STUDENT.id})")
+
+    existing_encounter = await encounter_repo.get_by_encounter_id(DEMO_ENCOUNTER_ID)
+    if existing_encounter:
+        existing_encounter.patient_id = DEMO_PATIENT.id
+        existing_encounter.student_id = DEMO_STUDENT.id
+        existing_encounter.finished_at = None
+        existing_encounter.is_completed_successfully = False
+        existing_encounter.metadata = {
+            **(existing_encounter.metadata or {}),
+            "source": "bootstrap_demo",
+            "auto_active": True,
+        }
+        await encounter_repo.upsert(existing_encounter, id_field="encounter_id")
+        print(f"Encounter demo reactivado: {existing_encounter.encounter_id}")
+    else:
+        demo_encounter = Encounter(
+            encounter_id=DEMO_ENCOUNTER_ID,
+            patient_id=DEMO_PATIENT.id,
+            student_id=DEMO_STUDENT.id,
+            evaluator_name="Demo Evaluador",
+            started_at=time.time(),
+            finished_at=None,
+            is_completed_successfully=False,
+            metadata={
+                "source": "bootstrap_demo",
+                "auto_active": True,
+            },
+        )
+        await encounter_repo.upsert(demo_encounter, id_field="encounter_id")
+        print(f"Encounter demo creado: {demo_encounter.encounter_id}")
