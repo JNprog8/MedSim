@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,5 +36,23 @@ class Settings(BaseSettings):
     TTS_TEMPERATURE: float = 0.5
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_flag(cls, value):
+        if isinstance(value, bool) or value is None:
+            return value
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            truthy_values = {"1", "true", "yes", "on", "debug", "development", "dev"}
+            falsy_values = {"0", "false", "no", "off", "release", "prod", "production"}
+
+            if normalized in truthy_values:
+                return True
+            if normalized in falsy_values:
+                return False
+
+        return value
 
 settings = Settings()
