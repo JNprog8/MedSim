@@ -27,12 +27,23 @@ async def test_audio_upload(request: Request):
     if not active_encounter:
         raise HTTPException(status_code=404, detail="No active encounter found")
 
-    flow_result = await services.audio_orchestrator.process_audio_bytes(
-        encounter_id=active_encounter.encounter_id,
-        audio_bytes=audio_bytes,
-        content_type=content_type,
-        filename=filename,
-    )
+    try:
+        flow_result = await services.audio_orchestrator.process_audio_bytes(
+            encounter_id=active_encounter.encounter_id,
+            audio_bytes=audio_bytes,
+            content_type=content_type,
+            filename=filename,
+        )
+    except HTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={
+                "saved_path": str(Path("backend") / "test_audio_uploads" / filename),
+                "encounter_id": active_encounter.encounter_id,
+                **detail,
+            },
+        )
 
     return {
         "ok": True,

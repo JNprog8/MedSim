@@ -61,7 +61,16 @@ class AudioOrchestrator:
         messages.append({"role": "user", "content": text})
 
         # 3. Get LLM response
-        assistant_text = await self.llm_service.chat_with_model(messages)
+        try:
+            logger.info("Audio flow stage=llm:start encounter_id=%s", encounter_id)
+            assistant_text = await self.llm_service.chat_with_model(messages)
+            logger.info("Audio flow stage=llm:ok encounter_id=%s", encounter_id)
+        except HTTPException as exc:
+            logger.exception("Audio flow stage=llm:error encounter_id=%s", encounter_id)
+            raise self._stage_http_exception("llm", exc)
+        except Exception as exc:
+            logger.exception("Audio flow stage=llm:error encounter_id=%s", encounter_id)
+            raise HTTPException(status_code=500, detail={"stage": "llm", "message": str(exc)})
 
         # 4. (Optional) TTS
         audio_base64 = None
@@ -69,6 +78,7 @@ class AudioOrchestrator:
         content_type = None
         if include_tts:
             try:
+                logger.info("Audio flow stage=tts:start encounter_id=%s", encounter_id)
                 audio_bytes = await self.tts_service.text_to_speech(assistant_text)
                 audio_base64 = base64.b64encode(audio_bytes).decode("ascii")
                 audio_asset = await self.audio_service.save_audio(
@@ -78,8 +88,13 @@ class AudioOrchestrator:
                 )
                 audio_url = f"/api/audio/{audio_asset.id}"
                 content_type = "audio/wav"
-            except Exception as e:
-                print(f"TTS Error: {e}") # Non-blocking for the chat
+                logger.info("Audio flow stage=tts:ok encounter_id=%s", encounter_id)
+            except HTTPException as exc:
+                logger.exception("Audio flow stage=tts:error encounter_id=%s", encounter_id)
+                raise self._stage_http_exception("tts", exc)
+            except Exception as exc:
+                logger.exception("Audio flow stage=tts:error encounter_id=%s", encounter_id)
+                raise HTTPException(status_code=500, detail={"stage": "tts", "message": str(exc)})
 
         # 5. Add assistant message to history
         assistant_msg = await self.encounter_service.add_message_to_history(encounter_id, "assistant", assistant_text, audio_url=audio_url)
@@ -232,11 +247,26 @@ class AudioOrchestrator:
         encounter_id: str,
         audio_payload: Dict[str, Any],
     ) -> Dict[str, Any]:
-        stt_result = await self.stt_service.transcribe_audio(
-            audio_payload["audio_bytes"],
-            content_type=audio_payload["content_type"],
-            filename=audio_payload["filename"],
-        )
+        try:
+            logger.info(
+                "Audio flow stage=stt:start encounter_id=%s filename=%s content_type=%s size_bytes=%s",
+                encounter_id,
+                audio_payload["filename"],
+                audio_payload["content_type"],
+                len(audio_payload["audio_bytes"]),
+            )
+            stt_result = await self.stt_service.transcribe_audio(
+                audio_payload["audio_bytes"],
+                content_type=audio_payload["content_type"],
+                filename=audio_payload["filename"],
+            )
+            logger.info("Audio flow stage=stt:ok encounter_id=%s", encounter_id)
+        except HTTPException as exc:
+            logger.exception("Audio flow stage=stt:error encounter_id=%s", encounter_id)
+            raise self._stage_http_exception("stt", exc)
+        except Exception as exc:
+            logger.exception("Audio flow stage=stt:error encounter_id=%s", encounter_id)
+            raise HTTPException(status_code=500, detail={"stage": "stt", "message": str(exc)})
         user_text = stt_result.get("text", "")
         return await self.process_text_input(
             encounter_id,
@@ -244,3 +274,9 @@ class AudioOrchestrator:
             include_tts=True,
             user_audio_url=audio_payload["audio_url"],
         )
+
+    def _stage_http_exception(self, stage: str, exc: HTTPException) -> HTTPException:
+        detail = exc.detail
+        if isinstance(detail, dict):
+            return HTTPException(status_code=exc.status_code, detail={"stage": stage, **detail})
+        return HTTPException(status_code=exc.status_code, detail={"stage": stage, "message": str(detail)})
