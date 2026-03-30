@@ -1,8 +1,13 @@
+from pathlib import Path
+from uuid import uuid4
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
+from backend.core.config import settings
 from backend.services.container import services
 
 router = APIRouter()
+TEST_AUDIO_DIR = settings.BASE_DIR / "backend" / "test_audio_uploads"
 
 
 @router.post("/test")
@@ -11,8 +16,15 @@ async def test_audio_upload(request: Request):
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Request body is empty")
 
+    TEST_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"audio-test-{uuid4().hex}.wav"
+    output_path = TEST_AUDIO_DIR / filename
+    output_path.write_bytes(audio_bytes)
+
     return {
         "ok": True,
+        "filename": filename,
+        "saved_path": str(Path("backend") / "test_audio_uploads" / filename),
         "content_type": request.headers.get("content-type") or "application/octet-stream",
         "size_bytes": len(audio_bytes),
     }
