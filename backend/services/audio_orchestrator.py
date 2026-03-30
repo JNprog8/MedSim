@@ -1,5 +1,6 @@
 import base64
 import logging
+from io import BytesIO
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, UploadFile
 from backend.services.realtime.hub import EncounterRealtimeHub
@@ -114,17 +115,27 @@ class AudioOrchestrator:
 
     async def process_audio_input(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
         audio_payload = await self._store_uploaded_audio(encounter_id, audio_file)
-        stt_result = await self.stt_service.transcribe_audio(
-            audio_payload["audio_bytes"],
-            content_type=audio_payload["content_type"],
-            filename=audio_payload["filename"],
+        return await self._run_audio_conversation_flow(
+            encounter_id=encounter_id,
+            audio_payload=audio_payload,
         )
-        user_text = stt_result.get("text", "")
-        return await self.process_text_input(
-            encounter_id,
-            user_text,
-            include_tts=True,
-            user_audio_url=audio_payload["audio_url"],
+
+    async def process_audio_bytes(
+        self,
+        encounter_id: str,
+        audio_bytes: bytes,
+        content_type: str = "audio/wav",
+        filename: str = "audio.wav",
+    ) -> Dict[str, Any]:
+        upload = UploadFile(
+            file=BytesIO(audio_bytes),
+            filename=filename,
+            headers={"content-type": content_type},
+        )
+        audio_payload = await self._store_uploaded_audio(encounter_id, upload)
+        return await self._run_audio_conversation_flow(
+            encounter_id=encounter_id,
+            audio_payload=audio_payload,
         )
 
     async def process_audio_input_unreal(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
@@ -215,3 +226,21 @@ class AudioOrchestrator:
             "content_type": content_type,
             "filename": audio_file.filename or "audio.wav",
         }
+
+    async def _run_audio_conversation_flow(
+        self,
+        encounter_id: str,
+        audio_payload: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        stt_result = await self.stt_service.transcribe_audio(
+            audio_payload["audio_bytes"],
+            content_type=audio_payload["content_type"],
+            filename=audio_payload["filename"],
+        )
+        user_text = stt_result.get("text", "")
+        return await self.process_text_input(
+            encounter_id,
+            user_text,
+            include_tts=True,
+            user_audio_url=audio_payload["audio_url"],
+        )

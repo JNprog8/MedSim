@@ -20,13 +20,28 @@ async def test_audio_upload(request: Request):
     filename = f"audio-test-{uuid4().hex}.wav"
     output_path = TEST_AUDIO_DIR / filename
     output_path.write_bytes(audio_bytes)
+    content_type = request.headers.get("content-type") or "audio/wav"
+
+    encounters = await services.encounter_service.list_public_encounters()
+    active_encounter = next((enc for enc in encounters if enc and enc.finished_at is None), None)
+    if not active_encounter:
+        raise HTTPException(status_code=404, detail="No active encounter found")
+
+    flow_result = await services.audio_orchestrator.process_audio_bytes(
+        encounter_id=active_encounter.encounter_id,
+        audio_bytes=audio_bytes,
+        content_type=content_type,
+        filename=filename,
+    )
 
     return {
         "ok": True,
+        "encounter_id": active_encounter.encounter_id,
         "filename": filename,
         "saved_path": str(Path("backend") / "test_audio_uploads" / filename),
-        "content_type": request.headers.get("content-type") or "application/octet-stream",
+        "content_type": content_type,
         "size_bytes": len(audio_bytes),
+        "result": flow_result,
     }
 
 @router.get("/{audio_id}")
