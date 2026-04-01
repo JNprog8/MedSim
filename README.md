@@ -232,7 +232,7 @@ Este endpoint:
 - toma el primer `encounter` activo
 - corre el flujo completo `STT -> LLM -> TTS`
 - agrega los mensajes del usuario y del paciente al `chat_history` del `encounter`
-- devuelve como respuesta el audio generado por el paciente simulado
+- devuelve como respuesta JSON con el audio generado por el paciente simulado en base64
 
 Si algo falla, la respuesta incluye informacion util como `saved_path`, `encounter_id` y, cuando aplica, el `stage` que fallo. Ademas, el backend deja logs mas detallados para diagnostico.
 
@@ -248,13 +248,14 @@ Ejemplo con `curl`:
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/audio/audio_unreal" \
   -H "Content-Type: audio/wav" \
-  --data-binary "@sample.wav" \
-  --output respuesta.wav
+  --data-binary "@sample.wav"
 ```
 
 Si todo sale bien:
 
-- el body de la respuesta es el audio generado
-- `Content-Type` suele ser `audio/wav`
+- el body de la respuesta es JSON
+- `assistant_audio.audio_base64` contiene el audio generado
+- `assistant_audio.content_type` suele ser `audio/wav`
+- `assistant_audio.size_bytes` informa el tamano del audio decodificado
 - la respuesta incluye headers como `X-Encounter-Id`, `X-Saved-Path` y `X-Reply-Text`
 
