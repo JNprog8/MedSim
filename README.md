@@ -222,3 +222,40 @@ TTS_LANGUAGE=es
 - HUs: `docs/HU-00-index.md`
 - Code tour: `docs/CODIGO-00-index.md`
 
+## Endpoint Unreal Audio
+
+El backend expone `POST /api/audio/audio_unreal` para integraciones Unreal que envian audio crudo en el body del request.
+
+Este endpoint:
+
+- guarda una copia local del audio recibido en `backend/unreal_audio_uploads/`
+- toma el primer `encounter` activo
+- corre el flujo completo `STT -> LLM -> TTS`
+- agrega los mensajes del usuario y del paciente al `chat_history` del `encounter`
+- devuelve como respuesta JSON con el audio generado por el paciente simulado en base64
+
+Si algo falla, la respuesta incluye informacion util como `saved_path`, `encounter_id` y, cuando aplica, el `stage` que fallo. Ademas, el backend deja logs mas detallados para diagnostico.
+
+### Request esperado
+
+- metodo: `POST`
+- ruta: `/api/audio/audio_unreal`
+- body: bytes del audio
+- `Content-Type`: opcional, por defecto `audio/wav`
+
+Ejemplo con `curl`:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/audio/audio_unreal" \
+  -H "Content-Type: audio/wav" \
+  --data-binary "@sample.wav"
+```
+
+Si todo sale bien:
+
+- el body de la respuesta es JSON
+- `assistant_audio.audio_base64` contiene el audio generado
+- `assistant_audio.content_type` suele ser `audio/wav`
+- `assistant_audio.size_bytes` informa el tamano del audio decodificado
+- la respuesta incluye headers como `X-Encounter-Id`, `X-Saved-Path` y `X-Reply-Text`
+

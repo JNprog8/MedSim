@@ -1,13 +1,5 @@
 from fastapi import APIRouter, Request
-from backend.api.endpoints import (
-    audio,
-    chat,
-    config,
-    encounters,
-    evaluations,
-    patients,
-    students,
-)
+from backend.api.endpoints import patients, students, encounters, chat, audio, config, evaluations
 
 api_router = APIRouter()
 

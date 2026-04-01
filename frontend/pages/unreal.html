@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedSim - Unreal Console</title>
+  <link rel="stylesheet" href="/frontend-assets/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet" />
+  <style>
+    :root {
+      --primary:#073b4c;
+      --primary-soft:#0d5c73;
+      --secondary:#0ea5a6;
+      --surface:#edf4f6;
+      --surface-low:#dce9ee;
+      --surface-card:rgba(255,255,255,.92);
+      --ink:#13232b;
+      --soft:#4d6775;
+      --muted:#728896;
+      --ghost:rgba(7,59,76,.12);
+      --success:#0f9d58;
+      --error:#ba1a1a;
+    }
+    * { box-sizing:border-box; }
+    html, body { height:100%; }
+    body {
+      margin:0;
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top right, rgba(14,165,166,.16), transparent 28%),
+        linear-gradient(180deg, #e6f1f5 0%, var(--surface) 42%, #f4f8fa 100%);
+      color:var(--ink);
+      font-family:"Inter", sans-serif;
+    }
+    button, input, textarea { font:inherit; }
+    .material-symbols-outlined { font-variation-settings:"FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
+    .page-shell {
+      width:min(1380px, calc(100vw - 28px));
+      margin:0 auto;
+      padding:18px 0 22px;
+      min-height:100vh;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:18px;
+    }
+    .app-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      padding:18px 22px;
+      border-radius:28px;
+      background:rgba(255,255,255,.78);
+      backdrop-filter:blur(18px);
+      box-shadow:0 20px 50px rgba(7,59,76,.08);
+    }
+    .brand-group { display:flex; align-items:center; gap:14px; min-width:0; }
+    .brand-title { margin:0; font-family:"Manrope", sans-serif; font-size:1.9rem; font-weight:800; letter-spacing:-.04em; color:var(--primary); }
+    .brand-subtitle { margin-top:4px; color:var(--soft); font-size:.95rem; }
+    .icon-link, .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      border:none; border-radius:14px; cursor:pointer; text-decoration:none;
+    }
+    .icon-link {
+      width:42px; height:42px; background:transparent; color:var(--primary);
+    }
+    .icon-link:hover { background:rgba(7,59,76,.08); }
+    .badge {
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px;
+      border-radius:999px; background:rgba(14,165,166,.12); color:var(--primary);
+      font-weight:700;
+    }
+    .layout {
+      min-height:0;
+      display:grid;
+      grid-template-columns:minmax(0, 1.08fr) minmax(340px, .92fr);
+      gap:18px;
+    }
+    .card {
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      border-radius:28px;
+      background:var(--surface-card);
+      box-shadow:0 18px 48px rgba(7,59,76,.08);
+      overflow:hidden;
+    }
+    .card-head {
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+      padding:20px 22px 14px;
+    }
+    .card-title {
+      margin:0;
+      font-family:"Manrope", sans-serif;
+      font-size:1.45rem;
+      font-weight:800;
+      letter-spacing:-.03em;
+      color:var(--primary);
+    }
+    .card-subtitle { margin-top:6px; color:var(--soft); font-size:.95rem; }
+    .status-pill {
+      align-self:flex-start;
+      padding:9px 12px;
+      border-radius:999px;
+      background:rgba(7,59,76,.08);
+      color:var(--soft);
+      font-size:.9rem;
+      font-weight:700;
+    }
+    .transcript {
+      flex:1;
+      min-height:320px;
+      overflow:auto;
+      padding:0 18px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .message {
+      padding:14px 16px;
+      border-radius:18px;
+      background:#fff;
+      color:var(--ink);
+      box-shadow:0 0 0 1px rgba(7,59,76,.06);
+    }
+    .message.user { background:#e7f0f7; }
+    .message.assistant { background:#f8fffd; }
+    .message-meta {
+      margin-bottom:8px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:.74rem;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .message-text { line-height:1.6; white-space:pre-wrap; }
+    .message-audio-meta { display:flex; align-items:center; gap:10px; margin-top:10px; }
+    .message-audio-status { font-size:.82rem; color:var(--soft); }
+    .message-audio-replay { border:none; background:transparent; color:var(--primary); font-weight:700; cursor:pointer; padding:0; }
+    .composer, .panel-body { padding:0 18px 18px; }
+    .composer-box, .panel-stack {
+      display:flex; flex-direction:column; gap:12px;
+      padding:16px; border-radius:20px; background:var(--surface);
+    }
+    .textarea, .file-input {
+      width:100%; border:none; border-radius:16px; background:#fff;
+      box-shadow:inset 0 -2px 0 rgba(7,59,76,.08); color:var(--ink);
+    }
+    .textarea { min-height:120px; resize:vertical; padding:14px 16px; }
+    .file-input { padding:14px; }
+    .textarea:focus, .file-input:focus { outline:none; box-shadow:inset 0 -2px 0 var(--secondary); }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .btn {
+      min-height:44px; padding:10px 16px; font-weight:800;
+      background:linear-gradient(135deg, var(--primary-soft), var(--primary)); color:#fff;
+    }
+    .btn.secondary { background:#fff; color:var(--primary); box-shadow:0 0 0 1px var(--ghost); }
+    .field-note { color:var(--soft); font-size:.92rem; line-height:1.55; }
+    .meta-list { display:grid; gap:10px; }
+    .meta-item {
+      padding:14px 16px; border-radius:18px; background:#fff; box-shadow:0 0 0 1px rgba(7,59,76,.06);
+    }
+    .meta-label {
+      margin-bottom:6px; font-size:.75rem; font-weight:800; letter-spacing:.12em;
+      text-transform:uppercase; color:var(--muted);
+    }
+    .meta-value { color:var(--ink); line-height:1.55; word-break:break-word; }
+    .status-ok { color:var(--success); }
+    .status-error { color:var(--error); }
+    @media (max-width:1080px) {
+      .layout { grid-template-columns:1fr; }
+    }
+    @media (max-width:780px) {
+      .page-shell { width:min(100vw - 16px, 100%); padding:8px 0 16px; }
+      .app-header { padding:14px 16px; border-radius:22px; }
+      .card { border-radius:22px; }
+      .card-head { flex-direction:column; }
+      .actions { flex-direction:column; }
+      .btn { width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="app-header">
+      <div class="brand-group">
+        <a class="icon-link material-symbols-outlined" href="/frontend/unreal_join" aria-label="Volver">arrow_back</a>
+        <div>
+          <h1 class="brand-title">MedSim Unreal</h1>
+          <div class="brand-subtitle">Consola conectada al encounter activo</div>
+        </div>
+      </div>
+      <div id="encounter-badge" class="badge">Sin encounter</div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Conversacion compartida</h2>
+            <div class="card-subtitle">Los mensajes enviados por estudiante, evaluador y Unreal se sincronizan por websocket.</div>
+          </div>
+          <div id="status" class="status-pill">Esperando conexión</div>
+        </div>
+        <div id="transcript" class="transcript"></div>
+        <div class="composer">
+          <div class="composer-box">
+            <textarea id="message-input" class="textarea" placeholder="Escribí la respuesta que Unreal quiere agregar a la conversación..."></textarea>
+            <div class="actions">
+              <button id="send-message" class="btn" type="button">
+                <span class="material-symbols-outlined">send</span>
+                <span>Enviar mensaje</span>
+              </button>
+              <button id="refresh-history" class="btn secondary" type="button">
+                <span class="material-symbols-outlined">history</span>
+                <span>Recargar historial</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Entrada Unreal</h2>
+            <div class="card-subtitle">Subí audio al endpoint de Unreal y mantené a la vista los datos del encounter actual.</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="panel-stack">
+            <div class="meta-list">
+              <div class="meta-item">
+                <div class="meta-label">Encounter ID</div>
+                <div id="encounter-id-value" class="meta-value">-</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Paciente</div>
+                <div id="patient-value" class="meta-value">-</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Estado</div>
+                <div id="encounter-state-value" class="meta-value">-</div>
+              </div>
+            </div>
+
+            <input id="audio-file" class="file-input" type="file" accept="audio/*" />
+            <div class="actions">
+              <button id="upload-audio" class="btn" type="button">
+                <span class="material-symbols-outlined">upload</span>
+                <span>Subir audio</span>
+              </button>
+            </div>
+            <div id="upload-status" class="field-note">Seleccioná un archivo de audio para enviarlo a `/api/audio_turn/with_unreal/{encounter_id}`.</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="/frontend-assets/student_audio.js"></script>
+  <script src="/frontend-assets/unreal.js"></script>
+</body>
+</html>
