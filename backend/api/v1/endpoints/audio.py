@@ -4,7 +4,7 @@ import base64
 import logging
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from backend.core.config import settings
 from backend.services.container import services
 
@@ -137,9 +137,17 @@ async def unreal_audio_upload(request: Request):
         saved_path,
     )
 
-    return Response(
-        content=assistant_audio_bytes,
-        media_type=assistant_audio_content_type,
+    return JSONResponse(
+        content={
+            "encounter_id": active_encounter.encounter_id,
+            "saved_path": saved_path,
+            "reply_text": flow_result.get("reply_text", ""),
+            "assistant_audio": {
+                "audio_base64": assistant_audio_base64,
+                "content_type": assistant_audio_content_type,
+                "size_bytes": len(assistant_audio_bytes),
+            },
+        },
         headers={
             "X-Encounter-Id": active_encounter.encounter_id,
             "X-Saved-Path": saved_path,

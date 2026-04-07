@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+date: Wed, 01 Apr 2026 16:10:00 GMT
+server: uvicorn
+x-encounter-id: enc_demo_activo
+x-saved-path: backend\unreal_audio_uploads\audio-unreal-0c1318ad40434cadb58b0575aaa132ec.wav
+x-reply-text: Buenas, doctor. Tengo una presión en el pecho que no se me quita y me tiene bastante nervioso. Además estoy sudando un poco y siento una alarma constante.
+content-length: 1682588
+content-type: application/json
+
