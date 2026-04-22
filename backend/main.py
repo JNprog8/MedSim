@@ -81,6 +81,10 @@ async def patients_page():
 async def students_page():
     return FileResponse(_frontend_file("students.html"))
 
+@app.get("/frontend/simulation_prototype")
+async def simulation_prototype_page():
+    return FileResponse(_frontend_file("simulation_prototype.html"))
+
 # --- WebSocket ---
 @app.websocket("/ws/encounters/{encounter_id}")
 async def ws_encounter_stream(websocket: WebSocket, encounter_id: str):

@@ -1,0 +1,211 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #12212b;
+  background: #edf4f6;
+}
+
+.simulation-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 18px;
+  width: min(1400px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 18px 0;
+}
+
+.simulation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(7, 59, 76, 0.08);
+}
+
+.simulation-title {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  color: #073b4c;
+}
+
+.simulation-subtitle {
+  margin: 4px 0 0;
+  color: #526a75;
+}
+
+.simulation-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: #073b4c;
+  background: #e8f1f4;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.simulation-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+}
+
+.scene-panel,
+.debug-panel {
+  min-height: 0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(7, 59, 76, 0.08);
+  overflow: hidden;
+}
+
+.scene-panel {
+  position: relative;
+  min-height: 580px;
+}
+
+.simulation-scene {
+  width: 100%;
+  height: 100%;
+  min-height: 580px;
+}
+
+.simulation-scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.scene-label {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  z-index: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #31515f;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.debug-panel {
+  padding: 18px;
+}
+
+.debug-title {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  color: #073b4c;
+}
+
+.debug-list {
+  display: grid;
+  gap: 12px;
+}
+
+.debug-item {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f3f8fa;
+}
+
+.debug-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #627985;
+}
+
+.debug-value {
+  margin: 0;
+  color: #12212b;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.debug-select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #c9d8de;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #12212b;
+  font: inherit;
+}
+
+.debug-select:disabled {
+  color: #6a7f89;
+  background: #edf3f5;
+}
+
+.debug-status {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.debug-status[data-status="loaded"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.debug-status[data-status="error"] {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.debug-error[data-empty="false"] {
+  color: #991b1b;
+}
+
+@media (max-width: 980px) {
+  .simulation-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-panel,
+  .simulation-scene {
+    min-height: 460px;
+  }
+}
+
+@media (max-width: 680px) {
+  .simulation-shell {
+    width: min(100vw - 16px, 100%);
+    padding: 8px 0;
+  }
+
+  .simulation-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .simulation-back {
+    width: 100%;
+  }
+}
