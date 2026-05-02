@@ -47,20 +47,28 @@ class PatientFormPayload(BaseModel):
 async def list_patients():
     return await services.patient_service.get_all_patients()
 
+from backend.services.factories import PatientFactory
+from backend.core.exceptions import EntityNotFoundError, PatientServiceError
+
 @router.get("/{patient_id}", response_model=PatientProfile)
 async def get_patient(patient_id: str):
-    patient = await services.patient_service.get_patient_by_id(patient_id)
-    if not patient:
+    try:
+        return await services.patient_service.get_patient_by_id(patient_id)
+    except EntityNotFoundError:
         raise HTTPException(status_code=404, detail="Patient not found")
-    return patient
+    except PatientServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=str)
 async def create_patient(payload: dict = Body(...)):
-    if "administrative" in payload or "triage" in payload or "institutional_history" in payload:
-        patient = PatientProfile(**payload)
-    else:
-        patient = services.patient_service.build_patient_from_form(PatientFormPayload(**payload).model_dump())
-    return await services.patient_service.create_or_update_patient(patient)
+    try:
+        if "administrative" in payload or "triage" in payload or "institutional_history" in payload:
+            patient = PatientProfile(**payload)
+        else:
+            patient = PatientFactory.build_from_form(payload)
+        return await services.patient_service.create_or_update_patient(patient)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error en validación de paciente: {str(e)}")
 
 @router.delete("/{patient_id}")
 async def delete_patient(patient_id: str):

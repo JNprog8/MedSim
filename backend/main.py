@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from backend.core.bootstrap import bootstrap_demo_data
 from backend.core.config import settings
-from backend.core.database import connect_to_mongo, close_mongo_connection
+from backend.core.database import connect_to_mongo, close_mongo_connection, get_database
 from backend.api.router import api_router
 from backend.services.container import services
 
@@ -16,6 +16,8 @@ from backend.services.container import services
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
+    db = get_database()
+    services.wire(db)
     await bootstrap_demo_data()
     yield
     # Shutdown

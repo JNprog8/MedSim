@@ -30,11 +30,13 @@ class EncounterRealtimeHub:
         if not targets: return
         payload = {"type": msg_type, "encounter_id": encounter_id, "ts": time.time(), "event": event}
         serialized = json.dumps(payload, ensure_ascii=False)
+        import logging
+        logger = logging.getLogger(__name__)
         for ws in targets:
             try:
                 await ws.send_text(serialized)
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to send to websocket (might be disconnected): {e}")
 
 realtime_hub_instance = EncounterRealtimeHub()
 

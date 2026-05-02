@@ -12,13 +12,15 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
     # --- MONGO DB ---
-    MONGO_URL: str = "mongodb://localhost:27017/medsim"
+    # Usamos 127.0.0.1 para comunicación interna en el Pod
+    MONGO_URL: str = "mongodb://127.0.0.1:27017/medsim"
     MONGO_DB_NAME: str = "medsim"
+    
     # --- LLM CONFIG ---
     PATIENT_LLM_URL: Optional[str] = None
     PATIENT_LLM_API_KEY: Optional[str] = None
     PATIENT_LLM_MODEL: str = "gpt-4-turbo"
-    OLLAMA_URL: str = "http://localhost:11434"
+    OLLAMA_URL: str = "http://host.containers.internal:11434"
 
     # --- STT CONFIG ---
     STT_API_URL: Optional[str] = None

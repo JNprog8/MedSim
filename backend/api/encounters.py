@@ -56,7 +56,7 @@ async def get_encounter_history(encounter_id: str):
     encounter = await services.encounter_service.get_encounter(encounter_id)
     if not encounter:
         raise HTTPException(status_code=404, detail="Encounter not found")
-    # Return formatted for frontend
+
     visible = [m.model_dump() for m in encounter.chat_history if m.role != "system"]
     return {
         "encounter_id": encounter_id,
@@ -80,14 +80,11 @@ async def get_student_view(encounter_id: str):
         "patient_id": encounter.patient_id,
         "finished_at": encounter.finished_at,
         "can_send_messages": encounter.finished_at is None,
-        "patient": services.patient_service.build_student_view(patient),
+        "patient": patient.to_student_view(),
     }
 
 @router.post("/{encounter_id}/link")
 async def link_encounter(encounter_id: str, request: Request):
-    """Link an existing encounter to a student's session/request"""
-    # Simply return the encounter if it exists for now, 
-    # ensuring the frontend can continue its flow
     encounter = await services.encounter_service.get_encounter(encounter_id)
     if not encounter:
         raise HTTPException(status_code=404, detail="Encounter not found")
