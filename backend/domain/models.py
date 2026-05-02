@@ -54,6 +54,30 @@ class PatientProfile(BaseModel):
     cognitive_confusion: str = "Normal"
     speaking_style: str = "rioplatense"
 
+    def to_student_view(self) -> Dict[str, Any]:
+        """
+        Tell: Genera una vista segura y filtrada para el estudiante.
+        Encapsula qué información es pública y cuál privada.
+        """
+        public_fields = {
+            "id": self.id,
+            "name": self.name,
+            "age": self.age,
+            "region": self.region,
+            "chief_complaint": self.chief_complaint,
+            "what_they_feel": self.what_they_feel,
+            "symptoms_reported": self.symptoms_reported,
+        }
+        
+        # Inyectar sub-objetos serializados
+        public_fields.update({
+            "administrative": self.administrative.model_dump(),
+            "triage": self.triage.model_dump(),
+            "institutional_history": self.institutional_history.model_dump(),
+            "recent_studies": self.recent_studies.model_dump(),
+        })
+        return public_fields
+
 class StudentProfile(BaseModel):
     id: str = Field(..., description="Stable identifier (used by UI)")
     name: str
@@ -74,6 +98,13 @@ class AudioAsset(BaseModel):
     data_base64: str
     created_at: float = Field(default_factory=time.time)
 
+    def to_bytes(self) -> bytes:
+        """
+        Tell: Decodifica los datos base64 internamente.
+        """
+        import base64
+        return base64.b64decode(self.data_base64)
+
 class Encounter(BaseModel):
     encounter_id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     patient_id: str
@@ -84,6 +115,24 @@ class Encounter(BaseModel):
     finished_at: Optional[float] = None
     is_completed_successfully: bool = False
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def add_message(self, role: str, content: str, audio_url: Optional[str] = None) -> Message:
+        """
+        Tell: Agrega un mensaje al historial interno.
+        Encapsula la creación del objeto Message.
+        """
+        if self.finished_at is not None:
+            raise ValueError("No se pueden añadir mensajes a un encuentro finalizado.")
+        
+        message = Message(role=role, content=content, audio_url=audio_url)
+        self.chat_history.append(message)
+        return message
+
+    def get_llm_context(self) -> List[Dict[str, str]]:
+        """
+        Tell: Devuelve el historial en un formato compatible con LLMs.
+        """
+        return [{"role": m.role, "content": m.content} for m in self.chat_history]
 
 class SegueEvaluationItem(BaseModel):
     id: str

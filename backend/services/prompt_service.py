@@ -7,7 +7,7 @@ class PromptService:
         try:
             if int(profile.age) >= 55:
                 return "usted"
-        except:
+        except (ValueError, TypeError):
             pass
         return "vos"
 

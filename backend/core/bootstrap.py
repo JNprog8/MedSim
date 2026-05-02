@@ -1,10 +1,10 @@
 import time
+import logging
 
 from backend.domain.models import Encounter, PatientProfile, StudentProfile
-from backend.persistence.encounter_repository import EncounterRepository
-from backend.persistence.patient_repository import PatientRepository
-from backend.persistence.student_repository import StudentRepository
+from backend.services.container import services
 
+logger = logging.getLogger(__name__)
 
 DEMO_PATIENT = PatientProfile(
     id="jorge_62_dolor_pecho_demo",
@@ -64,19 +64,22 @@ DEMO_STUDENT = StudentProfile(
 
 DEMO_ENCOUNTER_ID = "enc_demo_activo"
 
-
 async def bootstrap_demo_data():
-    patient_repo = PatientRepository()
-    student_repo = StudentRepository()
-    encounter_repo = EncounterRepository()
+    """
+    Tell: Asegura que existan datos de prueba iniciales en la DB.
+    Usa el ServiceContainer para desacoplar la persistencia.
+    """
+    await services.patient_repo.upsert(DEMO_PATIENT)
+    logger.info(f"Paciente demo asegurado: {DEMO_PATIENT.name}")
 
-    await patient_repo.upsert(DEMO_PATIENT)
-    print(f"Paciente demo asegurado: {DEMO_PATIENT.name} ({DEMO_PATIENT.id})")
+    await services.student_repo.upsert(DEMO_STUDENT)
+    logger.info(f"Alumno demo asegurado: {DEMO_STUDENT.name}")
 
-    await student_repo.upsert(DEMO_STUDENT)
-    print(f"Alumno demo asegurado: {DEMO_STUDENT.name} ({DEMO_STUDENT.id})")
+    try:
+        existing_encounter = await services.encounter_repo.get_by_id(DEMO_ENCOUNTER_ID, id_field="encounter_id")
+    except Exception:
+        existing_encounter = None
 
-    existing_encounter = await encounter_repo.get_by_encounter_id(DEMO_ENCOUNTER_ID)
     if existing_encounter:
         existing_encounter.patient_id = DEMO_PATIENT.id
         existing_encounter.student_id = DEMO_STUDENT.id
@@ -87,21 +90,22 @@ async def bootstrap_demo_data():
             "source": "bootstrap_demo",
             "auto_active": True,
         }
-        await encounter_repo.upsert(existing_encounter, id_field="encounter_id")
-        print(f"Encounter demo reactivado: {existing_encounter.encounter_id}")
-    else:
-        demo_encounter = Encounter(
-            encounter_id=DEMO_ENCOUNTER_ID,
-            patient_id=DEMO_PATIENT.id,
-            student_id=DEMO_STUDENT.id,
-            evaluator_name="Demo Evaluador",
-            started_at=time.time(),
-            finished_at=None,
-            is_completed_successfully=False,
-            metadata={
-                "source": "bootstrap_demo",
-                "auto_active": True,
-            },
-        )
-        await encounter_repo.upsert(demo_encounter, id_field="encounter_id")
-        print(f"Encounter demo creado: {demo_encounter.encounter_id}")
+        await services.encounter_repo.upsert(existing_encounter, id_field="encounter_id")
+        logger.info(f"Encounter demo reactivado: {existing_encounter.encounter_id}")
+        return
+
+    demo_encounter = Encounter(
+        encounter_id=DEMO_ENCOUNTER_ID,
+        patient_id=DEMO_PATIENT.id,
+        student_id=DEMO_STUDENT.id,
+        evaluator_name="Demo Evaluador",
+        started_at=time.time(),
+        finished_at=None,
+        is_completed_successfully=False,
+        metadata={
+            "source": "bootstrap_demo",
+            "auto_active": True,
+        },
+    )
+    await services.encounter_repo.upsert(demo_encounter, id_field="encounter_id")
+    logger.info(f"Encounter demo creado: {demo_encounter.encounter_id}")

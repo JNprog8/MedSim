@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Request
+<<<<<<< HEAD
 from backend.api.endpoints import patients, students, encounters, chat, audio, config, evaluations
+=======
+from backend.api import patients, students, encounters, chat, audio, config, evaluations
+>>>>>>> simulacion
 
 api_router = APIRouter()
 
-# Include config and chat at top level
 api_router.include_router(config.router, tags=["config"])
 api_router.include_router(chat.router, tags=["chat"])
 
-# Special top-level routes to match frontend expectations
 @api_router.get("/encounters_public")
 async def list_public_encounters():
     return await encounters.list_public_encounters_module()

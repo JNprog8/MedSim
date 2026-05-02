@@ -1,33 +1,43 @@
 import base64
 import logging
-from io import BytesIO
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi import HTTPException, UploadFile
-from backend.services.realtime.hub import EncounterRealtimeHub
+
+from backend.domain.models import Encounter, Message, PatientProfile
+from backend.services.ai_interfaces import ILLMService, ISTTService, ITTSService
+from backend.services.interfaces import IPatientService
+from backend.services.encounter_service import EncounterService
+from backend.services.hub import EncounterRealtimeHub
 from backend.services.audio_input_mode import AudioInputMode, resolve_audio_input_mode
 
 logger = logging.getLogger(__name__)
 
 class AudioOrchestrator:
+    """
+    Implementation: Orquestador de interacción multimodal (Audio/Texto).
+    Aplica 'Tell, Don't Ask' al delegar la gestión de estado a los modelos y servicios.
+    Sigue OCP mediante la resolución dinámica de modos de entrada.
+    """
+
     def __init__(
         self,
-        patient_service,
-        encounter_service,
-        audio_service,
-        llm_service,
-        stt_service,
-        tts_service,
-        prompt_service,
+        patient_service: IPatientService,
+        encounter_service: EncounterService,
+        audio_service: Any, 
+        llm_service: ILLMService,
+        stt_service: ISTTService,
+        tts_service: ITTSService,
+        prompt_service: Any, 
         realtime_hub: EncounterRealtimeHub
     ):
-        self.patient_service = patient_service
-        self.encounter_service = encounter_service
-        self.audio_service = audio_service
-        self.llm_service = llm_service
-        self.stt_service = stt_service
-        self.tts_service = tts_service
-        self.prompt_service = prompt_service
-        self.realtime_hub = realtime_hub
+        self.__patient_service = patient_service
+        self.__encounter_service = encounter_service
+        self.__audio_service = audio_service
+        self.__llm_service = llm_service
+        self.__stt_service = stt_service
+        self.__tts_service = tts_service
+        self.__prompt_service = prompt_service
+        self.__realtime_hub = realtime_hub
 
     async def process_text_input(
         self,
@@ -36,247 +46,93 @@ class AudioOrchestrator:
         include_tts: bool = False,
         user_audio_url: Optional[str] = None,
     ) -> Dict[str, Any]:
-        encounter = await self.encounter_service.get_encounter(encounter_id)
-        if not encounter:
-            raise HTTPException(status_code=404, detail="Encounter not found")
+        """
+        Flujo principal de conversación.
+        """
+        encounter = await self.__encounter_service.get_encounter(encounter_id)
+        if not encounter: raise HTTPException(status_code=404, detail="Encounter not found")
+        
+        patient = await self.__patient_service.get_patient_by_id(encounter.patient_id)
+        if not patient: raise HTTPException(status_code=404, detail="Patient profile not found")
 
-        patient = await self.patient_service.get_patient_by_id(encounter.patient_id)
-        if not patient:
-            raise HTTPException(status_code=404, detail="Patient profile not found")
+        user_msg = encounter.add_message("user", text, audio_url=user_audio_url)
+        await self.__encounter_service.repository.upsert(encounter, id_field="encounter_id")
+        await self.__realtime_hub.broadcast(encounter_id, user_msg.model_dump())
 
-        # 1. Add user message to history
-        user_msg = await self.encounter_service.add_message_to_history(
-            encounter_id,
-            "user",
-            text,
-            audio_url=user_audio_url,
-        )
-        await self.realtime_hub.broadcast(encounter_id, user_msg.model_dump())
+        system_prompt = self.__prompt_service.build_patient_system_prompt(patient)
+        llm_messages = [{"role": "system", "content": system_prompt}] + encounter.get_llm_context()
 
-        # 2. Prepare LLM prompt (Converting Pydantic objects to LLM-compatible dicts)
-        system_prompt = self.prompt_service.build_patient_system_prompt(patient)
-        messages = [{"role": "system", "content": system_prompt}]
-        for m in encounter.chat_history:
-            messages.append({"role": m.role, "content": m.content})
-        messages.append({"role": "user", "content": text})
+        assistant_text = await self.__llm_service.chat_with_model(llm_messages)
 
-        # 3. Get LLM response
-        try:
-            logger.info("Audio flow stage=llm:start encounter_id=%s", encounter_id)
-            assistant_text = await self.llm_service.chat_with_model(messages)
-            logger.info("Audio flow stage=llm:ok encounter_id=%s", encounter_id)
-        except HTTPException as exc:
-            logger.exception("Audio flow stage=llm:error encounter_id=%s", encounter_id)
-            raise self._stage_http_exception("llm", exc)
-        except Exception as exc:
-            logger.exception("Audio flow stage=llm:error encounter_id=%s", encounter_id)
-            raise HTTPException(status_code=500, detail={"stage": "llm", "message": str(exc)})
+        audio_data = await self.__handle_tts(encounter_id, assistant_text) if include_tts else {}
 
-        # 4. (Optional) TTS
-        audio_base64 = None
-        audio_url = None
-        content_type = None
-        if include_tts:
-            try:
-                logger.info("Audio flow stage=tts:start encounter_id=%s", encounter_id)
-                audio_bytes = await self.tts_service.text_to_speech(assistant_text)
-                audio_base64 = base64.b64encode(audio_bytes).decode("ascii")
-                audio_asset = await self.audio_service.save_audio(
-                    encounter_id=encounter_id,
-                    audio_bytes=audio_bytes,
-                    content_type="audio/wav",
-                )
-                audio_url = f"/api/audio/{audio_asset.id}"
-                content_type = "audio/wav"
-                logger.info("Audio flow stage=tts:ok encounter_id=%s", encounter_id)
-            except HTTPException as exc:
-                logger.exception("Audio flow stage=tts:error encounter_id=%s", encounter_id)
-                raise self._stage_http_exception("tts", exc)
-            except Exception as exc:
-                logger.exception("Audio flow stage=tts:error encounter_id=%s", encounter_id)
-                raise HTTPException(status_code=500, detail={"stage": "tts", "message": str(exc)})
+        assistant_msg = encounter.add_message("assistant", assistant_text, audio_url=audio_data.get("audio_url"))
+        await self.__encounter_service.repository.upsert(encounter, id_field="encounter_id")
+        await self.__realtime_hub.broadcast(encounter_id, assistant_msg.model_dump())
 
-        # 5. Add assistant message to history
-        assistant_msg = await self.encounter_service.add_message_to_history(encounter_id, "assistant", assistant_text, audio_url=audio_url)
-        await self.realtime_hub.broadcast(encounter_id, assistant_msg.model_dump())
-
-        unified_audio = {
-            "audio_url": audio_url,
-            "audio_base64": audio_base64,
-            "content_type": content_type,
-        } if (audio_url or audio_base64) else None
-
-        return {
-            "encounter_id": encounter_id,
-            "user_text": text,
-            "reply_text": assistant_text,
-            "transcript": {
-                "text": text,
-            },
-            "assistant_reply": {
-                "text": assistant_text,
-                "message_id": assistant_msg.message_id,
-            },
-            "assistant_audio": unified_audio,
-            "chat": {
-                "text": assistant_text,
-                "audio_url": audio_url,
-                "audio_base64": audio_base64,
-                "content_type": content_type,
-            },
-            "user_message": user_msg.model_dump(),
-            "assistant_message": assistant_msg.model_dump(),
-        }
-
-    async def process_audio_input(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
-        audio_payload = await self._store_uploaded_audio(encounter_id, audio_file)
-        return await self._run_audio_conversation_flow(
-            encounter_id=encounter_id,
-            audio_payload=audio_payload,
-        )
-
-    async def process_audio_bytes(
-        self,
-        encounter_id: str,
-        audio_bytes: bytes,
-        content_type: str = "audio/wav",
-        filename: str = "audio.wav",
-    ) -> Dict[str, Any]:
-        upload = UploadFile(
-            file=BytesIO(audio_bytes),
-            filename=filename,
-            headers={"content-type": content_type},
-        )
-        audio_payload = await self._store_uploaded_audio(encounter_id, upload)
-        return await self._run_audio_conversation_flow(
-            encounter_id=encounter_id,
-            audio_payload=audio_payload,
-        )
-
-    async def process_audio_input_unreal(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
-        try:
-            await self._store_uploaded_audio(encounter_id, audio_file)
-            return {"ok": True}
-        except HTTPException:
-            logger.exception(
-                "Unreal audio upload failed encounter_id=%s filename=%s content_type=%s",
-                encounter_id,
-                audio_file.filename,
-                audio_file.content_type,
-            )
-            raise
-        except Exception:
-            logger.exception(
-                "Unexpected Unreal audio upload failure encounter_id=%s filename=%s content_type=%s",
-                encounter_id,
-                audio_file.filename,
-                audio_file.content_type,
-            )
-            raise HTTPException(status_code=500, detail="Failed to store Unreal audio")
+        return self.__build_response_payload(encounter_id, text, assistant_text, assistant_msg, audio_data)
 
     async def process_audio_input_by_mode(
         self,
         encounter_id: str,
         audio_file: UploadFile,
-        mode: str | None = None,
+        mode: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """
+        OCP: Resolución de estrategia según el modo.
+        """
         resolved_mode = resolve_audio_input_mode(mode)
+        
         if resolved_mode == AudioInputMode.UNREAL:
-            return await self.process_audio_input_unreal(encounter_id, audio_file)
-        return await self.process_audio_input(encounter_id, audio_file)
+            return await self.__process_unreal_audio(encounter_id, audio_file)
+        
+        return await self.__process_standard_audio(encounter_id, audio_file)
 
-    async def append_external_message(
-        self,
-        encounter_id: str,
-        role: str,
-        text: str,
-        audio_url: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        encounter = await self.encounter_service.get_encounter(encounter_id)
-        if not encounter:
-            raise HTTPException(status_code=404, detail="Encounter not found")
-        if encounter.finished_at is not None:
-            raise HTTPException(status_code=409, detail="Encounter finished")
-
-        normalized_role = (role or "").strip().lower()
-        if normalized_role not in {"user", "assistant"}:
-            raise HTTPException(status_code=400, detail="Unsupported role")
-
-        content = (text or "").strip()
-        if not content:
-            raise HTTPException(status_code=400, detail="message is required")
-
-        message = await self.encounter_service.add_message_to_history(
-            encounter_id,
-            normalized_role,
-            content,
-            audio_url=audio_url,
-        )
-        await self.realtime_hub.broadcast(encounter_id, message.model_dump())
-        return {
-            "ok": True,
-            "encounter_id": encounter_id,
-            "message": message.model_dump(),
-        }
-
-    async def _store_uploaded_audio(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
-        encounter = await self.encounter_service.get_encounter(encounter_id)
-        if not encounter:
-            raise HTTPException(status_code=404, detail="Encounter not found")
-
-        audio_bytes = await audio_file.read()
-        if not audio_bytes:
-            raise HTTPException(status_code=400, detail="Audio file is empty")
-
-        content_type = audio_file.content_type or "audio/wav"
-        audio_asset = await self.audio_service.save_audio(
+    async def __handle_tts(self, encounter_id: str, text: str) -> Dict[str, Any]:
+        """Encapsulación de lógica TTS."""
+        audio_bytes = await self.__tts_service.text_to_speech(text)
+        audio_asset = await self.__audio_service.save_audio(
             encounter_id=encounter_id,
             audio_bytes=audio_bytes,
-            content_type=content_type,
+            content_type="audio/wav",
         )
         return {
-            "audio_asset": audio_asset,
-            "audio_bytes": audio_bytes,
             "audio_url": f"/api/audio/{audio_asset.id}",
-            "content_type": content_type,
-            "filename": audio_file.filename or "audio.wav",
+            "audio_base64": base64.b64encode(audio_bytes).decode("ascii"),
+            "content_type": "audio/wav"
         }
 
-    async def _run_audio_conversation_flow(
-        self,
-        encounter_id: str,
-        audio_payload: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        try:
-            logger.info(
-                "Audio flow stage=stt:start encounter_id=%s filename=%s content_type=%s size_bytes=%s",
-                encounter_id,
-                audio_payload["filename"],
-                audio_payload["content_type"],
-                len(audio_payload["audio_bytes"]),
-            )
-            stt_result = await self.stt_service.transcribe_audio(
-                audio_payload["audio_bytes"],
-                content_type=audio_payload["content_type"],
-                filename=audio_payload["filename"],
-            )
-            logger.info("Audio flow stage=stt:ok encounter_id=%s", encounter_id)
-        except HTTPException as exc:
-            logger.exception("Audio flow stage=stt:error encounter_id=%s", encounter_id)
-            raise self._stage_http_exception("stt", exc)
-        except Exception as exc:
-            logger.exception("Audio flow stage=stt:error encounter_id=%s", encounter_id)
-            raise HTTPException(status_code=500, detail={"stage": "stt", "message": str(exc)})
+    async def __process_standard_audio(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
+        # Implementación simplificada delegando a STT
+        audio_bytes = await audio_file.read()
+        stt_result = await self.__stt_service.transcribe_audio(
+            audio_bytes, 
+            content_type=audio_file.content_type or "audio/wav"
+        )
         user_text = stt_result.get("text", "")
+        
+        # Guardar audio del usuario
+        audio_asset = await self.__audio_service.save_audio(encounter_id, audio_bytes, audio_file.content_type)
+        
         return await self.process_text_input(
-            encounter_id,
-            user_text,
-            include_tts=True,
-            user_audio_url=audio_payload["audio_url"],
+            encounter_id, 
+            user_text, 
+            include_tts=True, 
+            user_audio_url=f"/api/audio/{audio_asset.id}"
         )
 
-    def _stage_http_exception(self, stage: str, exc: HTTPException) -> HTTPException:
-        detail = exc.detail
-        if isinstance(detail, dict):
-            return HTTPException(status_code=exc.status_code, detail={"stage": stage, **detail})
-        return HTTPException(status_code=exc.status_code, detail={"stage": stage, "message": str(detail)})
+    async def __process_unreal_audio(self, encounter_id: str, audio_file: UploadFile) -> Dict[str, Any]:
+        # Solo guardar sin procesar flujo de chat (Requerimiento Unreal)
+        audio_bytes = await audio_file.read()
+        await self.__audio_service.save_audio(encounter_id, audio_bytes, audio_file.content_type)
+        return {"ok": True, "mode": "unreal"}
+
+    def __build_response_payload(self, eid: str, text: str, reply: str, msg: Message, audio: Dict) -> Dict[str, Any]:
+        """Centralización de la construcción del payload de respuesta."""
+        return {
+            "encounter_id": eid,
+            "user_text": text,
+            "reply_text": reply,
+            "assistant_message": msg.model_dump(),
+            "assistant_audio": audio if audio else None
+        }

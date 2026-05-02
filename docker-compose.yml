@@ -1,21 +1,46 @@
-﻿services:
-  medsim-chat-only:
+services:
+  app:
     build: .
-    container_name: medsim-chat-only
+    container_name: medsim-app
+    restart: always
     ports:
-      - "8001:8080"
+      - "8000:8080"
+    env_file:
+      - .env
     environment:
+      - MONGO_URL=mongodb://admin:secret@mongo:27017/medsim?authSource=admin
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
-      - PATIENT_LLM_URL=${PATIENT_LLM_URL:-}
-      - PATIENT_LLM_API_KEY=${PATIENT_LLM_API_KEY:-}
-      - PATIENT_LLM_MODEL=${PATIENT_LLM_MODEL:-}
-      - STT_API_URL=${STT_API_URL:-}
-      - STT_API_KEY=${STT_API_KEY:-}
-      - STT_MODEL=${STT_MODEL:-}
-      - TTS_API_URL=${TTS_API_URL:-}
-      - TTS_API_KEY=${TTS_API_KEY:-}
-      - TTS_VOICE_ID=${TTS_VOICE_ID:-}
-      - TTS_MODEL_ID=${TTS_MODEL_ID:-}
-      - TTS_LANGUAGE=${TTS_LANGUAGE:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - medsim_net
+
+  mongo:
+    image: mongo:latest
+    container_name: medsim-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=secret
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - medsim_net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  mongo_data:
+
+networks:
+  medsim_net:
+    driver: bridge

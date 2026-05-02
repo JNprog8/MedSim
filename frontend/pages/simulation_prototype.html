@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedSim - Simulation Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/frontend-assets/simulation/styles/simulation.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="simulation-shell">
+    <header class="simulation-header">
+      <div>
+        <h1 class="simulation-title">MedSim Simulation Sandbox</h1>
+        <p class="simulation-subtitle">Prototipo aislado para validar carga visual del paciente 3D.</p>
+      </div>
+      <a class="simulation-back" href="/frontend/index">Volver a MedSim</a>
+    </header>
+
+    <section class="simulation-layout" aria-label="Sandbox de simulacion 3D">
+      <div class="scene-panel">
+        <div class="scene-label">Escena 3D</div>
+        <div class="simulation-scene" data-simulation-scene></div>
+      </div>
+
+      <aside class="debug-panel" aria-label="Debug de simulacion">
+        <h2 class="debug-title">Debug</h2>
+        <div class="debug-list">
+          <div class="debug-item">
+            <span class="debug-label">Paciente activo</span>
+            <p class="debug-value" data-debug-patient>Inicializando</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Asset</span>
+            <p class="debug-value" data-debug-asset>Inicializando</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Estado de carga</span>
+            <p class="debug-value debug-status" data-debug-status data-status="initializing">initializing</p>
+          </div>
+          <div class="debug-item">
+            <label class="debug-label" for="state-selector">Estado visual</label>
+            <select class="debug-select" id="state-selector" data-state-selector disabled>
+              <option>Esperando paciente</option>
+            </select>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Estado visual actual</span>
+            <p class="debug-value" data-debug-patient-state>idle</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Clip resuelto</span>
+            <p class="debug-value" data-debug-resolved-clip>Pendiente</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Asset resuelto</span>
+            <p class="debug-value" data-debug-resolved-asset>Pendiente</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Ajuste animacion</span>
+            <p class="debug-value" data-debug-animation-adjustments>Pendiente</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Camara</span>
+            <p class="debug-value" data-debug-camera>Pendiente</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Fallback</span>
+            <p class="debug-value" data-debug-fallback>No</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Animaciones</span>
+            <p class="debug-value" data-debug-animations>Pendiente</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Clips detectados</span>
+            <p class="debug-value" data-debug-clip-names>Pendiente</p>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Clip activo</span>
+            <p class="debug-value" data-debug-active-clip>Ninguno</p>
+          </div>
+          <div class="debug-item">
+            <label class="debug-label" for="animation-selector">Reproducir clip</label>
+            <select class="debug-select" id="animation-selector" data-animation-selector disabled>
+              <option>Esperando clips</option>
+            </select>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Error</span>
+            <p class="debug-value debug-error" data-debug-error data-empty="true">Sin errores</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="/frontend-assets/simulation/index.js"></script>
+</body>
+</html>

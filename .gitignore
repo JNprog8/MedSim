@@ -29,7 +29,10 @@ ENV/
 env/
 
 # IDEs
-.idea/
+
+# Personal Podman Environment
+podman-local/
+podman-guide.md
 .vscode/
 *.swp
 *.swo
@@ -45,4 +48,3 @@ htmlcov/
 logs/*.log
 logs/*.txt
 !logs/.keep
-

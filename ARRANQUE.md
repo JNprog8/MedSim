@@ -105,6 +105,8 @@ python3.12 -m venv .venv
 ```powershell
 cd C:\Users\Maxi\Desktop\MedSim
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+## PUBLICO
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Linux / macOS
