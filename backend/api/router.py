@@ -1,30 +1,32 @@
 from fastapi import APIRouter, Request
-<<<<<<< HEAD
-from backend.api.endpoints import patients, students, encounters, chat, audio, config, evaluations
-=======
+
 from backend.api import patients, students, encounters, chat, audio, config, evaluations
->>>>>>> simulacion
 
 api_router = APIRouter()
 
 api_router.include_router(config.router, tags=["config"])
 api_router.include_router(chat.router, tags=["chat"])
 
+
 @api_router.get("/encounters_public")
 async def list_public_encounters():
     return await encounters.list_public_encounters_module()
+
 
 @api_router.get("/encounters_saved")
 async def list_saved_encounters(request: Request):
     return await encounters.list_saved_encounters_module(request)
 
+
 @api_router.get("/models")
 async def get_models():
     return await encounters.get_available_models()
 
+
 @api_router.get("/evaluations_saved")
 async def list_evaluations_saved():
     return await evaluations.list_saved_evaluations()
+
 
 # Standard prefixed routes
 api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
