@@ -13,6 +13,10 @@ class TTSService:
         self.api_key = settings.TTS_API_KEY
         self.voice_id = settings.TTS_VOICE_ID if hasattr(settings, 'TTS_VOICE_ID') else None # Wait, I missed a typo in settings?
         self.model_id = settings.TTS_MODEL_ID
+        # Si la configuración sigue retornando el modelo viejo 'sonic' (debido a caché de uvicorn o variables de entorno del sistema), forzamos la actualización.
+        if self.model_id == "sonic":
+            self.model_id = "sonic-3.5"
+            
         self.language = settings.TTS_LANGUAGE
 
     def _is_elevenlabs(self) -> bool:
@@ -37,7 +41,8 @@ class TTSService:
                 "transcript": text,
                 "model_id": self.model_id,
                 "voice": {"mode": "id", "id": self.voice_id},
-                "output_format": {"container": "wav", "encoding": "pcm_f32le", "sample_rate": 44100}
+                "output_format": {"container": "wav", "encoding": "pcm_f32le", "sample_rate": 44100},
+                "language": self.language
             }
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, json=payload, headers=headers) as response:

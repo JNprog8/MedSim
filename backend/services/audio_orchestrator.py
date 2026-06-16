@@ -72,6 +72,36 @@ class AudioOrchestrator:
 
         return self.__build_response_payload(encounter_id, text, assistant_text, assistant_msg, audio_data)
 
+    async def process_audio_bytes(
+        self,
+        encounter_id: str,
+        audio_bytes: bytes,
+        content_type: str = "audio/wav",
+        filename: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Procesa audio en bruto (bytes) sin necesidad de un UploadFile.
+        Usado por UnrealAudioHandler y cualquier integración que envíe bytes directamente.
+        Flujo: STT → guarda audio del usuario → LLM → TTS → respuesta.
+        """
+        stt_result = await self.__stt_service.transcribe_audio(audio_bytes, content_type=content_type)
+        user_text = stt_result.get("text", "")
+        logger.info(f"[process_audio_bytes] STT result: '{user_text}'")
+
+        audio_asset = await self.__audio_service.save_audio(
+            encounter_id=encounter_id,
+            audio_bytes=audio_bytes,
+            content_type=content_type,
+        )
+        user_audio_url = f"/api/audio/{audio_asset.id}"
+
+        return await self.process_text_input(
+            encounter_id=encounter_id,
+            text=user_text,
+            include_tts=True,
+            user_audio_url=user_audio_url,
+        )
+
     async def process_audio_input_by_mode(
         self,
         encounter_id: str,

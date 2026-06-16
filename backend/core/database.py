@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import socket
+from urllib.parse import urlparse
 from motor.motor_asyncio import AsyncIOMotorClient
 from .config import settings
 
@@ -25,27 +26,41 @@ async def connect_to_mongo():
     
     for attempt in range(1, max_retries + 1):
         try:
+            # Construir URL final con credenciales si no están presentes y existen en settings
+            mongo_url = settings.MONGO_URL
+            if settings.MONGO_USER and settings.MONGO_PASSWORD and "@" not in mongo_url:
+                prefix = "mongodb://"
+                if mongo_url.startswith(prefix):
+                    mongo_url = f"{prefix}{settings.MONGO_USER}:{settings.MONGO_PASSWORD}@{mongo_url[len(prefix):]}"
+                    # Si no hay authSource, añadir admin por defecto para asegurar autenticación exitosa
+                    if "authSource" not in mongo_url:
+                        sep = "&" if "?" in mongo_url else "?"
+                        mongo_url += f"{sep}authSource=admin"
+
             # Diagnóstico de red básico
-            host = settings.MONGO_URL.split("@")[-1].split(":")[0] if "@" in settings.MONGO_URL else "127.0.0.1"
-            logger.info(f"Probando resolución de red para {host}...")
+            parsed = urlparse(mongo_url)
+            host = parsed.hostname or "127.0.0.1"
+            port = parsed.port or 27017
+            
+            logger.info(f"Probando resolución de red para {host}:{port}...")
             
             # Intentar abrir un socket para verificar que el puerto responde
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(2)
-            result = sock.connect_ex((host, 27017))
+            result = sock.connect_ex((host, port))
             sock.close()
             
             if result != 0:
-                logger.warning(f"⚠️ El puerto 27017 en {host} no responde (code {result}).")
+                logger.warning(f"⚠️ El puerto {port} en {host} no responde (code {result}).")
             else:
-                logger.info(f"✅ Puerto 27017 en {host} abierto.")
+                logger.info(f"✅ Puerto {port} en {host} abierto.")
 
             # Limpiamos la URL para el log (sin contraseña)
-            safe_url = settings.MONGO_URL.split("@")[-1] if "@" in settings.MONGO_URL else settings.MONGO_URL
+            safe_url = mongo_url.split("@")[-1] if "@" in mongo_url else mongo_url
             logger.info(f"Conectando a MongoDB en {safe_url} (Intento {attempt}/{max_retries})...")
             
             client = AsyncIOMotorClient(
-                settings.MONGO_URL,
+                mongo_url,
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=5000
             )

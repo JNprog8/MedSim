@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     # Usamos 127.0.0.1 para comunicación interna en el Pod
     MONGO_URL: str = "mongodb://127.0.0.1:27017/medsim"
     MONGO_DB_NAME: str = "medsim"
+    MONGO_USER: Optional[str] = None
+    MONGO_PASSWORD: Optional[str] = None
     
     # --- LLM CONFIG ---
     PATIENT_LLM_URL: Optional[str] = None
@@ -37,7 +39,11 @@ class Settings(BaseSettings):
     TTS_SPEED: float = 1.0
     TTS_TEMPERATURE: float = 0.5
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=str(Path(__file__).resolve().parent.parent.parent / ".env"),
+        env_file_encoding='utf-8',
+        extra="ignore"
+    )
 
     @field_validator("DEBUG", mode="before")
     @classmethod
