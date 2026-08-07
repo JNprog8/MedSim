@@ -108,7 +108,7 @@ const VOICE_OPTIONS = [
 export default function PatientForm() {
   const { id } = useParams()
   const navigate = useNavigate()
-  
+
   const isEditMode = !!id
 
   const [loading, setLoading] = useState(isEditMode)
@@ -122,7 +122,7 @@ export default function PatientForm() {
   const [pLastName, setPLastName] = useState('')
   const [pAge, setPAge] = useState('')
   const pRegion = 'AMBA' // Fixed region
-  
+
   // Administrative Info
   const [pDob, setPDob] = useState('')
   const [pDni, setPDni] = useState('')
@@ -165,7 +165,7 @@ export default function PatientForm() {
 
   // --- Dynamic Symptoms tags ---
   const [symptoms, setSymptoms] = useState<Symptom[]>([])
-  
+
   // Temp form for new symptom
   const [newSymptomName, setNewSymptomName] = useState('')
   const [newSymptomSeverity, setNewSymptomSeverity] = useState<number>(5)
@@ -187,7 +187,7 @@ export default function PatientForm() {
       const res = await fetch(`/api/patients/${patientId}`)
       if (!res.ok) throw new Error('Paciente no encontrado')
       const p = await res.json()
-      
+
       setPId(p.id)
       const nameParts = (p.name || '').split(' ')
       setPFirstName(nameParts[0] || '')
@@ -240,7 +240,7 @@ export default function PatientForm() {
       } else {
         setSymptoms([])
       }
-      
+
     } catch (err: any) {
       setFormError(err.message)
     } finally {
@@ -264,7 +264,7 @@ export default function PatientForm() {
   const handleSavePatient = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
-    
+
     if (!pFirstName || !pAge || !pChief) {
       setFormError('Revisa los campos obligatorios: Nombre, Edad y Motivo de Consulta.')
       return
@@ -276,9 +276,9 @@ export default function PatientForm() {
     const finalId = isEditMode && pId
       ? pId
       : `${pFirstName}_${pLastName}_${Math.floor(1000 + Math.random() * 9000)}`
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9_]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9_]/g, '')
 
     const payload = {
       id: finalId,
@@ -331,7 +331,7 @@ export default function PatientForm() {
         const errorData = await res.json()
         throw new Error(errorData.detail || 'Error al guardar el paciente')
       }
-      
+
       navigate('/patients')
     } catch (err: any) {
       setFormError(err.message || 'Error desconocido.')
@@ -350,7 +350,7 @@ export default function PatientForm() {
   return (
     <EvaluatorLayout activePill="patients">
       <div className="flex items-center gap-4 mb-6">
-        <button 
+        <button
           onClick={() => navigate('/patients')}
           className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:text-cyan-600 transition-colors"
         >
@@ -360,7 +360,7 @@ export default function PatientForm() {
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
             {isEditMode ? `Editar Paciente: ${pFirstName} ${pLastName}` : 'Nuevo Paciente'}
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Completa los datos fijos y el caso clínico del paciente.</p>
+          <p className="text-sm text-slate-500 mt-1 font-medium">Completa la ficha del clinica y el caso del paciente.</p>
         </div>
       </div>
 
@@ -374,14 +374,14 @@ export default function PatientForm() {
                 className={`pb-2 px-2 font-bold text-sm transition-colors border-b-2 ${activeTab === 'identity' ? 'border-cyan-600 text-cyan-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 onClick={() => setActiveTab('identity')}
               >
-                Identidad del Paciente (Fijo)
+                Identidad del Paciente
               </button>
               <button
                 type="button"
                 className={`pb-2 px-2 font-bold text-sm transition-colors border-b-2 ${activeTab === 'case' ? 'border-cyan-600 text-cyan-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 onClick={() => setActiveTab('case')}
               >
-                Caso Clínico (Variable)
+                Caso Clínico
               </button>
             </div>
             {formError && (
@@ -422,14 +422,13 @@ export default function PatientForm() {
                       <label className="block text-xs font-bold text-slate-600 mb-2">Avatar 3D de la Entrevista</label>
                       <div className="grid grid-cols-3 gap-2">
                         {AVATAR_OPTIONS.map(opt => (
-                          <div 
+                          <div
                             key={opt.id}
                             onClick={() => setSelectedAvatar(opt.id)}
-                            className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all ${
-                              selectedAvatar === opt.id 
-                                ? 'border-cyan-500 bg-cyan-50 shadow-sm ring-2 ring-cyan-500/20' 
+                            className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all ${selectedAvatar === opt.id
+                                ? 'border-cyan-500 bg-cyan-50 shadow-sm ring-2 ring-cyan-500/20'
                                 : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <span className="material-symbols-rounded text-3xl text-slate-600">{opt.icon}</span>
                             <span className="text-[10px] font-bold text-slate-600 text-center">{opt.label}</span>
@@ -443,14 +442,13 @@ export default function PatientForm() {
                       <label className="block text-xs font-bold text-slate-600 mb-2">Voz de Texto-a-Voz (TTS)</label>
                       <div className="grid grid-cols-2 gap-2">
                         {VOICE_OPTIONS.map(opt => (
-                          <div 
+                          <div
                             key={opt.id}
                             onClick={() => setSelectedVoice(opt.id)}
-                            className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center transition-all ${
-                              selectedVoice === opt.id 
-                                ? 'border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-500/20' 
+                            className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center transition-all ${selectedVoice === opt.id
+                                ? 'border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-500/20'
                                 : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <span className="text-[11px] font-bold text-slate-600 text-center">{opt.label}</span>
                           </div>
@@ -525,8 +523,8 @@ export default function PatientForm() {
                     <div className="flex flex-col sm:flex-row gap-3 items-end">
                       <div className="flex-1">
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Síntoma</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           placeholder="Ej: Fiebre"
                           value={newSymptomName}
                           onChange={(e) => setNewSymptomName(e.target.value)}
@@ -536,8 +534,8 @@ export default function PatientForm() {
                       </div>
                       <div className="w-24">
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Severidad (1-10)</label>
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           min={1} max={10}
                           value={newSymptomSeverity}
                           onChange={(e) => setNewSymptomSeverity(Number(e.target.value))}
@@ -546,15 +544,15 @@ export default function PatientForm() {
                       </div>
                       <div className="w-24">
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Días</label>
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           min={0}
                           value={newSymptomDuration}
                           onChange={(e) => setNewSymptomDuration(Number(e.target.value))}
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-cyan-500 transition-all text-sm text-center"
                         />
                       </div>
-                      <button 
+                      <button
                         type="button"
                         onClick={handleAddSymptom}
                         className="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded-lg hover:bg-slate-700 active:scale-95 transition-all"
@@ -729,7 +727,7 @@ export default function PatientForm() {
               </div>
             )}
           </div>
-          
+
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
             <button
               type="button"
