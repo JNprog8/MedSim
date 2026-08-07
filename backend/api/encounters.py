@@ -166,8 +166,19 @@ async def build_public_encounter_view():
     encounters = await services.encounter_service.list_public_encounters()
     rows = []
     for encounter in encounters:
-        patient = await services.patient_service.get_patient_by_id(encounter.patient_id) if encounter.patient_id else None
-        student = await services.student_service.get_student_id(encounter.student_id) if encounter.student_id else None
+        patient = None
+        if encounter.patient_id:
+            try:
+                patient = await services.patient_service.get_patient_by_id(encounter.patient_id)
+            except Exception:
+                patient = None
+
+        student = None
+        if encounter.student_id:
+            try:
+                student = await services.student_service.get_student_id(encounter.student_id)
+            except Exception:
+                student = None
         finished = encounter.finished_at is not None
         rows.append({
             **encounter.model_dump(),

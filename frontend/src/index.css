@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/*
+  Add customized Google Fonts and global font settings:
+*/
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+}

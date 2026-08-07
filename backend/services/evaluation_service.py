@@ -156,8 +156,16 @@ class EvaluationService:
 
         evaluation = await self.get_evaluation_by_encounter(encounter_id)
         if not evaluation:
-            logger.error(f"Evaluation for encounter {encounter_id} not found in build_pdf_bytes")
-            raise ValueError(f"Evaluation for encounter {encounter_id} not found")
+            logger.info(f"Evaluation for encounter {encounter_id} not found, generating dynamic default")
+            evaluation = SegueEvaluation(
+                encounter_id=encounter_id, 
+                patient_id=encounter.patient_id,
+                student_id=encounter.student_id or "",
+                student_name="",
+                evaluator_name=encounter.evaluator_name or "",
+                items=[]
+            )
+            evaluation = await self.hydrate_evaluation(evaluation)
 
         try:
             patient = await self.__patient_service.get_patient_by_id(encounter.patient_id)

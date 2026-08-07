@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional, Union
+from pydantic import BaseModel, Field, field_validator
 import time
 import uuid
 
@@ -8,6 +8,8 @@ class PatientProfile(BaseModel):
     name: str
     age: int
     region: str = Field("AMBA", description="Region within Argentina")
+    avatar: str = Field("young_male", description="Identifier for visual avatar")
+    voice: str = Field("es-AR-male-1", description="Identifier for TTS voice")
 
     class TrueCaseReveal(BaseModel):
         diagnostico_principal: str
@@ -37,13 +39,36 @@ class PatientProfile(BaseModel):
         imaging: List[str] = Field(default_factory=list)
         notes: List[str] = Field(default_factory=list)
 
+    class Symptom(BaseModel):
+        name: str
+        severity: int = Field(5, ge=1, le=10)
+        duration_days: int = Field(1, ge=0)
+
     administrative: AdministrativeInfo = Field(default_factory=AdministrativeInfo)
     triage: TriageInfo = Field(default_factory=TriageInfo)
     institutional_history: ClinicalHistoryRecord = Field(default_factory=ClinicalHistoryRecord)
     recent_studies: RecentStudies = Field(default_factory=RecentStudies)
     chief_complaint: str
     what_they_feel: str
-    symptoms_reported: List[str] = Field(default_factory=list)
+    spontaneous_info: Optional[str] = Field("", description="Información que el paciente revela voluntariamente o al inicio")
+    conditional_info: Optional[str] = Field("", description="Información que solo revela si el estudiante le pregunta directamente")
+    symptoms_reported: List[Symptom] = Field(default_factory=list)
+    
+    @field_validator('symptoms_reported', mode='before')
+    @classmethod
+    def parse_symptoms(cls, v):
+        if not v:
+            return []
+        parsed = []
+        for item in v:
+            if isinstance(item, str):
+                parsed.append({"name": item, "severity": 5, "duration_days": 1})
+            elif isinstance(item, dict):
+                parsed.append(item)
+            else:
+                parsed.append(item)
+        return parsed
+
     known_medical_history: Dict[str, Any] = Field(default_factory=dict)
     unknown_real_problem: str
     doctor_display_real_problem: str
@@ -64,9 +89,11 @@ class PatientProfile(BaseModel):
             "name": self.name,
             "age": self.age,
             "region": self.region,
+            "avatar": self.avatar,
+            "voice": self.voice,
             "chief_complaint": self.chief_complaint,
             "what_they_feel": self.what_they_feel,
-            "symptoms_reported": self.symptoms_reported,
+            "symptoms_reported": [s.model_dump() for s in self.symptoms_reported],
         }
         
         # Inyectar sub-objetos serializados

@@ -6,7 +6,9 @@ class AudioInputMode(str, Enum):
     UNREAL = "unreal"
 
 
-def resolve_audio_input_mode(mode: str | None = None) -> AudioInputMode:
+from typing import Optional
+
+def resolve_audio_input_mode(mode: Optional[str] = None) -> AudioInputMode:
     normalized = (mode or "").strip().lower()
     if normalized == AudioInputMode.UNREAL.value:
         return AudioInputMode.UNREAL

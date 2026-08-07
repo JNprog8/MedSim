@@ -35,7 +35,14 @@ DEMO_PATIENT = PatientProfile(
     ),
     chief_complaint="Doctor, me agarra como una presion en el pecho desde hace un rato y me asuste.",
     what_they_feel="Siento una presion en el pecho, estoy nervioso y no se me termina de pasar.",
-    symptoms_reported=["Presion en el pecho", "Ansiedad", "Sudoracion leve", "Sensacion de alarma"],
+    spontaneous_info="Me empezó a doler de repente mientras estaba descansando en casa. Es un dolor apretado en el pecho, como una pata de elefante, y me da miedo porque nunca sentí algo así.",
+    conditional_info="Fui fumador durante 15 años pero lo dejé hace 10. Mi papá tuvo un infarto a los 67 años. Además, hace 3 días no tomo la pastilla de la presión (Losartán) porque me quedé sin caja y no fui a comprar.",
+    symptoms_reported=[
+        PatientProfile.Symptom(name="Presion en el pecho", severity=8, duration_days=0),
+        PatientProfile.Symptom(name="Ansiedad", severity=7, duration_days=0),
+        PatientProfile.Symptom(name="Sudoracion leve", severity=4, duration_days=0),
+        PatientProfile.Symptom(name="Sensacion de alarma", severity=9, duration_days=0),
+    ],
     known_medical_history={
         "tabaquismo": "Ex fumador, dejo hace 10 anos",
         "antecedentes_familiares": "Padre con infarto a los 67 anos",

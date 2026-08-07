@@ -30,62 +30,34 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 static_dir = BASE_DIR / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-app.mount("/frontend-assets", StaticFiles(directory=str(BASE_DIR / "frontend" / "assets")), name="frontend_assets")
+
+app.mount("/assets", StaticFiles(directory=str(BASE_DIR / "frontend" / "dist" / "assets")), name="react_assets")
+img_dir = BASE_DIR / "frontend" / "dist" / "IMG"
+if img_dir.exists():
+    app.mount("/IMG", StaticFiles(directory=str(img_dir)), name="react_images")
 
 # API
 app.include_router(api_router, prefix="/api")
 
-# --- Frontend Routes ---
-def _frontend_file(name: str) -> Path:
-    return BASE_DIR / "frontend" / "pages" / name
-
+# --- Frontend Routes (React SPA Catch-all) ---
 @app.get("/")
 async def root():
     return RedirectResponse(url="/frontend/index")
 
-@app.get("/frontend/index")
-async def index_page():
-    return FileResponse(_frontend_file("index.html"))
+@app.get("/frontend/{catchall:path}")
+async def serve_react_app(catchall: str):
+    return FileResponse(BASE_DIR / "frontend" / "dist" / "index.html")
 
-@app.get("/frontend/student")
-async def student_page():
-    return FileResponse(_frontend_file("student.html"))
+@app.get("/frontend")
+async def serve_react_app_root():
+    return FileResponse(BASE_DIR / "frontend" / "dist" / "index.html")
 
-@app.get("/frontend/student_join")
-async def student_join_page():
-    return FileResponse(_frontend_file("student_join.html"))
-
-@app.get("/frontend/unreal_join")
-async def unreal_join_page():
-    return FileResponse(_frontend_file("unreal_join.html"))
-
-@app.get("/frontend/student_sessions")
-async def student_sessions_page():
-    return FileResponse(_frontend_file("student_sessions.html"))
-
-@app.get("/frontend/evaluator")
-async def evaluator_page():
-    return FileResponse(_frontend_file("evaluator_dashboard.html"))
-
-@app.get("/frontend/evaluator_encounter")
-async def evaluator_encounter_page():
-    return FileResponse(_frontend_file("evaluator_encounter.html"))
-
-@app.get("/frontend/unreal")
-async def unreal_page():
-    return FileResponse(_frontend_file("unreal.html"))
-
-@app.get("/frontend/patients")
-async def patients_page():
-    return FileResponse(_frontend_file("patients.html"))
-
-@app.get("/frontend/students")
-async def students_page():
-    return FileResponse(_frontend_file("students.html"))
-
-@app.get("/frontend/simulation_prototype")
-async def simulation_prototype_page():
-    return FileResponse(_frontend_file("simulation_prototype.html"))
+@app.get("/favicon.svg")
+async def serve_favicon():
+    favicon_path = BASE_DIR / "frontend" / "dist" / "favicon.svg"
+    if favicon_path.exists():
+        return FileResponse(favicon_path)
+    return FileResponse(BASE_DIR / "frontend" / "public" / "favicon.svg")
 
 # --- WebSocket ---
 @app.websocket("/ws/encounters/{encounter_id}")

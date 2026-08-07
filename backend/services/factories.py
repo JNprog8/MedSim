@@ -63,6 +63,8 @@ class PatientFactory:
             name=first_name or full_name or patient_id,
             age=age,
             region=str(payload.get("region") or "AMBA").strip() or "AMBA",
+            avatar=str(payload.get("avatar") or "young_male").strip() or "young_male",
+            voice=str(payload.get("voice") or "es-AR-male-1").strip() or "es-AR-male-1",
             administrative=PatientProfile.AdministrativeInfo(
                 full_name=full_name or first_name or None,
                 date_of_birth=str(payload.get("date_of_birth") or "").strip() or None,
@@ -85,7 +87,12 @@ class PatientFactory:
             ),
             chief_complaint=chief_complaint,
             what_they_feel=str(payload.get("what_they_feel") or "").strip() or "Me siento mal.",
-            symptoms_reported=split_lines(payload.get("symptoms_text")),
+            spontaneous_info=str(payload.get("spontaneous_info") or "").strip(),
+            conditional_info=str(payload.get("conditional_info") or "").strip(),
+            symptoms_reported=payload.get("symptoms") or [
+                {"name": s, "severity": 5, "duration_days": 1}
+                for s in split_lines(payload.get("symptoms_text"))
+            ],
             known_medical_history=parse_key_value_lines(payload.get("known_history_text")),
             unknown_real_problem=str(payload.get("unknown_real_problem") or "(Completar)").strip() or "(Completar)",
             doctor_display_real_problem=str(payload.get("doctor_display_real_problem") or "(Completar)").strip() or "(Completar)",
