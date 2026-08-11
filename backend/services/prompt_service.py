@@ -12,11 +12,14 @@ class PromptService:
         return "vos"
 
     def _dialect_hints(self, profile: PatientProfile) -> str:
-        style = (profile.speaking_style or "").strip().lower()
         region = (profile.region or "").strip() or "Argentina"
-        if "cordob" in style:
-            return f"Hablas en argentino con un toque cordobés (sutil). Usa voseo y muletillas como 'che' o 'un toque'."
-        return f"Hablas en español rioplatense/argentino (Región: {region}). Usa voseo (tenés/estás/sos) de forma natural."
+        return (
+            f"Hablas en dialecto rioplatense/argentino auténtico (Región: {region}). "
+            f"Usás VOSEO estricto (sos, tenés, estás, querés, venís, fijate, sabés). "
+            f"Utilizás modismos y giros locales cotidianos de Argentina (ej: 'panza', 'pastilla', 'guardia', 'doc', 'che', 're', 'un poco', 'la verdad'). "
+            f"Queda totalmente prohibido usar español neutro o términos como 'tú', 'ustedes' (salvo trato al doctor), o conjugaciones neutras. "
+            f"Escribís y hablás 100% como una persona argentina real para que el sintetizador de voz (TTS) lo pronuncie con acento argentino natural."
+        )
 
     def build_patient_system_prompt(self, profile: PatientProfile) -> str:
         symptoms_lines = []

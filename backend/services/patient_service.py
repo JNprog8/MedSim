@@ -14,15 +14,24 @@ class PatientService(IPatientService):
     def __init__(self, repository: IRepository[PatientProfile]):
         self.__repository = repository
 
+    def _normalize_patient(self, patient: PatientProfile) -> PatientProfile:
+        if not patient.last_name and patient.administrative and patient.administrative.full_name:
+            full = patient.administrative.full_name.strip()
+            if full.lower().startswith(patient.name.lower()):
+                patient.last_name = full[len(patient.name):].strip()
+        return patient
+
     async def get_all_patients(self) -> List[PatientProfile]:
         try:
-            return await self.__repository.list_all()
+            patients = await self.__repository.list_all()
+            return [self._normalize_patient(p) for p in patients]
         except Exception as e:
             raise PatientServiceError("No se pudieron recuperar los pacientes", {"error": str(e)})
 
     async def get_patient_by_id(self, patient_id: str) -> PatientProfile:
         try:
-            return await self.__repository.get_by_id(patient_id)
+            patient = await self.__repository.get_by_id(patient_id)
+            return self._normalize_patient(patient)
         except Exception as e:
             raise PatientServiceError(f"Error al obtener el paciente {patient_id}", {"error": str(e)})
 
@@ -44,7 +53,7 @@ class PatientService(IPatientService):
         Usa Dictionary Comprehension para eficiencia.
         """
         keys_to_export = [
-            "id", "name", "age", "region", "chief_complaint", 
+            "id", "name", "last_name", "age", "region", "chief_complaint", 
             "what_they_feel", "symptoms_reported"
         ]
         

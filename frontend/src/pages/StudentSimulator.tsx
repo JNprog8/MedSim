@@ -12,6 +12,7 @@ interface Message {
 interface PatientView {
   id: string
   name: string
+  last_name?: string
   age: number
   region: string
   chief_complaint: string
@@ -86,36 +87,36 @@ export default function StudentSimulator() {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [statusMsg, setStatusMsg] = useState('')
-  
+
   // Encounter active/finished state
   const [chatLocked, setChatLocked] = useState(false)
 
   // Simulation Data
   const [messages, setMessages] = useState<Message[]>([])
   const [patient, setPatient] = useState<PatientView | null>(null)
-  
+
   // Input fields
   const [textInput, setTextInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  
+
   // Audio state
   const [audioConfig, setAudioConfig] = useState<any>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingStatus, setRecordingStatus] = useState('Micrófono listo')
-  
+
   // Audio playback
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // WebSocket Ref
   const wsRef = useRef<WebSocket | null>(null)
-  
+
   // Recorder Refs
   const recordingContextRef = useRef<AudioContext | null>(null)
   const recordingStreamRef = useRef<MediaStream | null>(null)
   const recordingProcessorRef = useRef<ScriptProcessorNode | null>(null)
   const audioChunksRef = useRef<Float32Array[]>([])
-  
+
   // Speech Recognition Ref (Browser Native STT fallback)
   const recognitionRef = useRef<any>(null)
 
@@ -126,7 +127,7 @@ export default function StudentSimulator() {
   const fetchStudentView = async () => {
     try {
       setLoading(true)
-      
+
       // Load public configurations
       const configResp = await fetch('/api/config_state')
       if (configResp.ok) {
@@ -139,7 +140,7 @@ export default function StudentSimulator() {
       })
       if (!resp.ok) throw new Error('No se pudo unir a la consulta del estudiante')
       const data = await resp.json()
-      
+
       setPatient(data.patient)
       setChatLocked(data.finished_at !== null)
 
@@ -174,7 +175,7 @@ export default function StudentSimulator() {
 
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const url = `${proto}://${window.location.host}/ws/encounters/${encodeURIComponent(encounterId)}?session_id=${encodeURIComponent(sessionId)}`
-    
+
     const connect = () => {
       const socket = new WebSocket(url)
       wsRef.current = socket
@@ -197,10 +198,14 @@ export default function StudentSimulator() {
         if (payload.type === 'message_added' || (payload?.role && payload?.content)) {
           const msg = payload.type === 'message_added' ? payload.event : payload
           if (msg && msg.role && msg.role !== 'system') {
-            setIsTyping(false)
+            if (msg.role === 'assistant') {
+              setIsTyping(false)
+            } else {
+              setIsTyping(true)
+            }
             setMessages(prev => {
               if (prev.some(m => m.message_id === msg.message_id)) return prev
-              
+
               // Autoplay patient speech if it's the assistant replying
               if (msg.role === 'assistant' && msg.audio_url) {
                 setTimeout(() => {
@@ -216,7 +221,7 @@ export default function StudentSimulator() {
         if (payload.type === 'tts_update') {
           const evt = payload.event || {}
           if (evt.message_id && evt.tts) {
-            setMessages(prev => 
+            setMessages(prev =>
               prev.map(m => m.message_id === evt.message_id ? { ...m, audio_url: evt.tts.audio_url || evt.tts.audio_base64 } : m)
             )
             // Autoplay newly synthesized TTS audio immediately
@@ -262,11 +267,11 @@ export default function StudentSimulator() {
       rec.lang = 'es-AR'
       rec.continuous = true
       rec.interimResults = true
-      
+
       rec.onresult = () => {
         // Voice is processed on the backend, do not write to text input to keep it clean.
       }
-      
+
       recognitionRef.current = rec
     }
   }, [])
@@ -294,7 +299,7 @@ export default function StudentSimulator() {
     audioRef.current = audio
     setPlayingAudioId(messageId)
     audio.play().catch(() => setPlayingAudioId(null))
-    
+
     audio.onended = () => {
       setPlayingAudioId(null)
     }
@@ -304,16 +309,16 @@ export default function StudentSimulator() {
   const handleSendText = async () => {
     const text = textInput.trim()
     if (!text || chatLocked) return
-    
+
     setTextInput('')
     setIsTyping(true)
-    
+
     try {
       const formData = new FormData()
       formData.append('message', text)
       formData.append('encounter_id', encounterId)
       formData.append('patient_id', patient?.id || '')
-      
+
       const ttsConfigured = audioConfig?.tts_api_key_configured || audioConfig?.tts_configured
       if (ttsConfigured) {
         formData.append('include_tts', 'true')
@@ -349,7 +354,7 @@ export default function StudentSimulator() {
       // STOP recording
       setIsRecording(false)
       setRecordingStatus('Procesando audio...')
-      
+
       if (recordingProcessorRef.current) {
         recordingProcessorRef.current.disconnect()
         recordingProcessorRef.current = null
@@ -358,7 +363,7 @@ export default function StudentSimulator() {
         recordingStreamRef.current.getTracks().forEach(track => track.stop())
         recordingStreamRef.current = null
       }
-      
+
       // Stop speech recognition dictation and clear text input field
       if (recognitionRef.current) {
         recognitionRef.current.stop()
@@ -367,7 +372,7 @@ export default function StudentSimulator() {
 
       const sampleRate = recordingContextRef.current?.sampleRate || 44100
       const audioBlob = encodeWavBlob(audioChunksRef.current, sampleRate)
-      
+
       // Upload recording blob to /api/audio_turn
       setIsTyping(true)
       try {
@@ -375,13 +380,13 @@ export default function StudentSimulator() {
         formData.append('file', audioBlob, 'recording.wav')
         formData.append('encounter_id', encounterId)
         formData.append('patient_id', patient?.id || '')
-        
+
         const resp = await fetch('/api/audio_turn', {
           method: 'POST',
           headers: { 'X-Session-Id': sessionId },
           body: formData
         })
-        
+
         if (!resp.ok) throw new Error('Error al enviar audio al servidor')
         const data = await resp.json()
         setRecordingStatus('Micrófono listo')
@@ -413,7 +418,7 @@ export default function StudentSimulator() {
     } else {
       // START recording
       if (chatLocked) return
-      
+
       try {
         audioChunksRef.current = []
         setRecordingStatus('Grabando...')
@@ -458,14 +463,14 @@ export default function StudentSimulator() {
   const [diffDiagnosis, setDiffDiagnosis] = useState('')
   const [planInstructions, setPlanInstructions] = useState('')
   const [rxPrescription, setRxPrescription] = useState('')
-  
+
   // Results view model
   const [trueCaseResult, setTrueCaseResult] = useState<any>(null)
 
   const handleFinishSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFinishError('')
-    
+
     if (!finalDiagnosis.trim()) {
       setFinishError('Ingresa tu hipótesis de diagnóstico principal')
       return
@@ -475,7 +480,7 @@ export default function StudentSimulator() {
     try {
       const resp = await fetch(`/api/encounters/${encodeURIComponent(encounterId)}/finish`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Session-Id': sessionId
         },
@@ -533,8 +538,8 @@ export default function StudentSimulator() {
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200/60 py-3.5 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link 
-              to="/student_join" 
+            <Link
+              to="/index"
               className="w-9 h-9 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-600 transition-colors shadow-sm"
               aria-label="Salir"
             >
@@ -542,11 +547,11 @@ export default function StudentSimulator() {
             </Link>
             <div>
               <h1 className="font-extrabold text-cyan-900 text-lg leading-none">Consultorio Virtual</h1>
-              <p className="text-2xs text-slate-500 font-medium mt-1 uppercase tracking-wide">Paciente: {patient?.name} ({patient?.age} años)</p>
+              <p className="text-2xs text-slate-500 font-medium mt-1 uppercase tracking-wide">Paciente: {patient?.name} {patient?.last_name || ''} ({patient?.age} años)</p>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => {
               if (trueCaseResult) {
                 setIsFinishModalOpen(true)
@@ -574,11 +579,11 @@ export default function StudentSimulator() {
 
       {/* Main Grid: Chat Left, Medical record right */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full flex-1 min-h-0">
-        
+
         {/* Left Section: Chat (col span 7) */}
         <section className="lg:col-span-7 flex flex-col h-[calc(100vh-170px)] min-h-[400px]">
           <div className="flex-1 bg-white border border-slate-200/60 rounded-3xl p-4 flex flex-col min-h-0 shadow-sm">
-            
+
             {/* Messages box */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-1.5 scrollbar-thin">
               {messages.length === 0 ? (
@@ -591,26 +596,24 @@ export default function StudentSimulator() {
                 messages.map((m, idx) => {
                   const isUser = m.role === 'user'
                   return (
-                    <div 
-                      key={m.message_id || idx} 
-                      className={`flex flex-col max-w-[85%] p-4 rounded-2xl shadow-sm border ${
-                        isUser 
-                          ? 'bg-slate-50 border-slate-200 ml-auto' 
-                          : 'bg-cyan-50/20 border-cyan-100 mr-auto'
-                      }`}
+                    <div
+                      key={m.message_id || idx}
+                      className={`flex flex-col max-w-[85%] p-4 rounded-2xl shadow-sm border ${isUser
+                        ? 'bg-slate-50 border-slate-200 ml-auto'
+                        : 'bg-cyan-50/20 border-cyan-100 mr-auto'
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-6 mb-1.5">
                         <span className="text-2xs font-bold text-slate-400 uppercase tracking-wide">
                           {isUser ? 'Tú (Médico)' : 'Paciente'}
                         </span>
                         {m.audio_url && (
-                          <button 
+                          <button
                             onClick={() => handlePlayAudio(m.message_id, m.audio_url)}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
-                              playingAudioId === m.message_id
-                                ? 'bg-cyan-100 border-cyan-300 text-cyan-800 animate-pulse'
-                                : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-500'
-                            }`}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${playingAudioId === m.message_id
+                              ? 'bg-cyan-100 border-cyan-300 text-cyan-800 animate-pulse'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-500'
+                              }`}
                           >
                             <Volume2 className="w-3.5 h-3.5" />
                           </button>
@@ -639,8 +642,8 @@ export default function StudentSimulator() {
             {/* Input area */}
             <div className="mt-4 pt-4 border-t border-slate-100 space-y-3 flex-shrink-0">
               <div className="flex gap-2">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   disabled={chatLocked}
                   placeholder={chatLocked ? 'Consulta finalizada' : 'Escribe tu pregunta al paciente y presiona Enter...'}
                   value={textInput}
@@ -648,7 +651,7 @@ export default function StudentSimulator() {
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSendText(); }}
                   className="flex-1 px-4 py-3 bg-slate-100 border-b border-transparent rounded-2xl outline-none focus:bg-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm disabled:opacity-60"
                 />
-                <button 
+                <button
                   onClick={handleSendText}
                   disabled={chatLocked || !textInput.trim()}
                   className="w-12 h-12 flex items-center justify-center bg-gradient-to-r from-cyan-800 to-cyan-900 text-white rounded-2xl shadow-md hover:brightness-105 active:scale-95 transition-all disabled:opacity-50"
@@ -659,15 +662,14 @@ export default function StudentSimulator() {
 
               {/* Audio controls */}
               <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/40">
-                <button 
+                <button
                   type="button"
                   disabled={chatLocked || !sttConfigured}
                   onClick={handleToggleRecord}
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-                    isRecording 
-                      ? 'bg-rose-100 border border-rose-200 text-rose-600 animate-pulse'
-                      : 'bg-white border border-slate-200 text-cyan-800 hover:bg-slate-50 disabled:opacity-50 shadow-sm'
-                  }`}
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isRecording
+                    ? 'bg-rose-100 border border-rose-200 text-rose-600 animate-pulse'
+                    : 'bg-white border border-slate-200 text-cyan-800 hover:bg-slate-50 disabled:opacity-50 shadow-sm'
+                    }`}
                   title="Hablar por micrófono"
                 >
                   <Mic className="w-5 h-5" />
@@ -703,7 +705,7 @@ export default function StudentSimulator() {
                   <User className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-cyan-900 text-base leading-none">{patient.name}</h3>
+                  <h3 className="font-extrabold text-cyan-900 text-base leading-none">{patient.name} {patient.last_name || ''}</h3>
                   <span className="text-xs text-slate-500 font-semibold block mt-1.5">
                     Edad: {patient.age} años | Origen: {patient.region}
                   </span>
@@ -846,7 +848,7 @@ export default function StudentSimulator() {
       {isFinishModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFinishModalOpen(false)} />
-          
+
           <div className="relative bg-white rounded-3xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[85vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
               <div>
@@ -857,14 +859,14 @@ export default function StudentSimulator() {
                   {trueCaseResult ? 'Comparación de hipótesis clínicas.' : 'Escribe tu diagnóstico antes de revelar el caso.'}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsFinishModalOpen(false)}
                 className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               {finishError && (
                 <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-600 text-xs font-medium flex items-start gap-2.5">
@@ -921,8 +923,8 @@ export default function StudentSimulator() {
                 <form onSubmit={handleFinishSubmit} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Hipótesis Diagnóstica Principal</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Ej: Neumonía, Infarto Agudo de Miocardio, etc."
                       value={finalDiagnosis}
                       onChange={(e) => setFinalDiagnosis(e.target.value)}
@@ -932,8 +934,8 @@ export default function StudentSimulator() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Diagnósticos Diferenciales (separados por comas)</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Ej: Embolia pulmonar, Insuficiencia cardíaca, Angina estable"
                       value={diffDiagnosis}
                       onChange={(e) => setDiffDiagnosis(e.target.value)}
@@ -943,7 +945,7 @@ export default function StudentSimulator() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Indicaciones clínicas / Plan terapéutico</label>
-                    <textarea 
+                    <textarea
                       rows={3}
                       placeholder="¿Qué estudios adicionales indicas? ¿Cuál es el tratamiento a seguir?"
                       value={planInstructions}
@@ -954,7 +956,7 @@ export default function StudentSimulator() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Receta médica (opcional)</label>
-                    <textarea 
+                    <textarea
                       rows={2}
                       placeholder="Medicaciones prescritas, dosis, frecuencia..."
                       value={rxPrescription}
@@ -964,14 +966,14 @@ export default function StudentSimulator() {
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setIsFinishModalOpen(false)}
                       className="px-5 py-3 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-sm font-bold shadow-sm transition-colors"
                     >
                       Cancelar
                     </button>
-                    <button 
+                    <button
                       type="submit"
                       disabled={finishSaving}
                       className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-800 to-cyan-900 text-white hover:brightness-105 active:scale-98 text-sm font-bold shadow-lg shadow-cyan-950/10 disabled:opacity-50 transition-all"
@@ -985,7 +987,7 @@ export default function StudentSimulator() {
 
             {trueCaseResult && (
               <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end flex-shrink-0">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsFinishModalOpen(false)}
                   className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-800 to-cyan-900 text-white hover:brightness-105 text-sm font-bold shadow-md shadow-cyan-950/10 transition-all"

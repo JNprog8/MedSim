@@ -6,61 +6,150 @@ from backend.services.container import services
 
 logger = logging.getLogger(__name__)
 
+
 DEMO_PATIENT = PatientProfile(
-    id="jorge_62_dolor_pecho_demo",
-    name="Jorge",
-    age=62,
+    id="lucas_21_apendicitis_demo",
+    name="Lucas",
+    last_name="Fernandez",
+    age=21,
     region="AMBA",
+    avatar="male",
+    voice="es-AR-male-1",
+
     administrative=PatientProfile.AdministrativeInfo(
-        full_name="Jorge Ramirez",
-        date_of_birth="1963-08-14",
-        dni="22123456",
-        insurance="PAMI",
+        full_name="Lucas Fernandez",
+        date_of_birth="2005-03-18",
+        dni="45123456",
+        insurance="OSDE",
         sex="Masculino",
-        occupation="Jubilado",
+        occupation="Estudiante universitario",
     ),
+
     triage=PatientProfile.TriageInfo(
-        reference_short="Presion en el pecho desde hace un rato + ansiedad"
+        reference_short="Dolor abdominal intenso desde ayer"
     ),
+
     institutional_history=PatientProfile.ClinicalHistoryRecord(
-        diagnoses=["Hipertension arterial", "Dislipidemia"],
-        surgeries=["Apendicectomia"],
-        allergies=["Penicilina"],
-        medications_current=["Losartan 50 mg por dia", "Atorvastatina 20 mg por dia"],
+        diagnoses=["Amigdalitis aguda repetitiva en la infancia"],
+        surgeries=["Sin cirugías previas"],
+        allergies=["Sin alergias medicamentosas conocidas (NKDA)"],
+        medications_current=["Ibuprofeno 400 mg ocasional por dolores ocasionales"],
     ),
+
     recent_studies=PatientProfile.RecentStudies(
-        labs=["Glucemia 108 mg/dL", "Colesterol total 228 mg/dL"],
-        imaging=["Rx de torax sin hallazgos agudos (hace 8 meses)"],
-        notes=["Consulta previa por dolor toracico atipico."],
+        labs=[
+            "Leucocitos: 15.200/mm3",
+            "Neutrófilos: 86%",
+            "PCR: 12 mg/dL",
+            "Hemoglobina: 14,8 g/dL",
+        ],
+        imaging=[
+            "Ecografía abdominal: apéndice aumentado de diámetro, "
+            "no compresible, con signos inflamatorios compatibles "
+            "con apendicitis aguda."
+        ],
+        notes=[
+            "Paciente consulta por dolor abdominal de aproximadamente "
+            "24 horas de evolución.",
+            "Dolor inicialmente periumbilical con posterior migración "
+            "a fosa ilíaca derecha.",
+            "Refiere náuseas, fiebre y pérdida de apetito.",
+        ],
     ),
-    chief_complaint="Doctor, me agarra como una presion en el pecho desde hace un rato y me asuste.",
-    what_they_feel="Siento una presion en el pecho, estoy nervioso y no se me termina de pasar.",
-    spontaneous_info="Me empezó a doler de repente mientras estaba descansando en casa. Es un dolor apretado en el pecho, como una pata de elefante, y me da miedo porque nunca sentí algo así.",
-    conditional_info="Fui fumador durante 15 años pero lo dejé hace 10. Mi papá tuvo un infarto a los 67 años. Además, hace 3 días no tomo la pastilla de la presión (Losartán) porque me quedé sin caja y no fui a comprar.",
+
+    chief_complaint=(
+        "Doctor, me duele muchísimo la panza desde ayer "
+        "y cada vez se me hace más difícil aguantar el dolor."
+    ),
+
+    what_they_feel=(
+        "Tengo un dolor fuerte en la panza. Al principio me dolía "
+        "cerca del ombligo, pero después se fue para el lado derecho "
+        "y ahora me duele bastante cuando camino o me muevo. "
+        "También tengo un poco de fiebre, náuseas y no tengo ganas de comer."
+    ),
+
+    spontaneous_info=(
+        "El dolor empezó ayer alrededor del ombligo. "
+        "Al principio pensé que era algo que había comido, "
+        "pero después el dolor se fue hacia la parte baja derecha "
+        "de la panza y se hizo más fuerte. Desde entonces tengo "
+        "náuseas, estoy medio decaído y tuve algo de fiebre."
+    ),
+
+    conditional_info=(
+        "El dolor empeora cuando camino, toso o hago movimientos bruscos. "
+        "No tuve diarrea. No tuve vómitos. No recuerdo haber comido nada "
+        "fuera de lo normal. No tengo enfermedades importantes conocidas. "
+        "Nunca me operaron y no tomo medicamentos habitualmente."
+    ),
+
     symptoms_reported=[
-        PatientProfile.Symptom(name="Presion en el pecho", severity=8, duration_days=0),
-        PatientProfile.Symptom(name="Ansiedad", severity=7, duration_days=0),
-        PatientProfile.Symptom(name="Sudoracion leve", severity=4, duration_days=0),
-        PatientProfile.Symptom(name="Sensacion de alarma", severity=9, duration_days=0),
+        PatientProfile.Symptom(
+            name="Dolor abdominal",
+            severity=8,
+            duration_days=1,
+        ),
+        PatientProfile.Symptom(
+            name="Náuseas",
+            severity=6,
+            duration_days=1,
+        ),
+        PatientProfile.Symptom(
+            name="Fiebre",
+            severity=5,
+            duration_days=1,
+        ),
+        PatientProfile.Symptom(
+            name="Pérdida de apetito",
+            severity=6,
+            duration_days=1,
+        ),
     ],
+
     known_medical_history={
-        "tabaquismo": "Ex fumador, dejo hace 10 anos",
-        "antecedentes_familiares": "Padre con infarto a los 67 anos",
+        "antecedentes_medicos": "Ninguno conocido",
+        "antecedentes_familiares": "Sin antecedentes relevantes conocidos",
+        "tabaquismo": "No fuma",
+        "alcohol": "Consumo ocasional",
+        "alimentacion_reciente": "Sin cambios ni alimentos inusuales",
     },
-    unknown_real_problem="Dolor toracico compatible con sindrome coronario agudo a descartar.",
-    doctor_display_real_problem="Dolor precordial en evaluacion.",
-    true_case=PatientProfile.TrueCaseReveal(
-        diagnostico_principal="Sindrome coronario agudo",
-        diferenciales=["Angina inestable", "Crisis de ansiedad", "ERGE"],
-        indicaciones_plan="Evaluacion urgente, ECG, troponinas seriadas, monitoreo y derivacion a guardia.",
-        receta="Aspirina segun criterio clinico y manejo hospitalario.",
+
+    unknown_real_problem=(
+        "Inflamación aguda del apéndice compatible con apendicitis aguda."
     ),
+
+    doctor_display_real_problem=(
+        "Dolor abdominal agudo en evaluación."
+    ),
+
+    true_case=PatientProfile.TrueCaseReveal(
+        diagnostico_principal="Apendicitis aguda",
+        diferenciales=[
+            "Gastroenteritis",
+            "Cólico renal",
+            "Diverticulitis",
+            "Adenitis mesentérica",
+        ],
+        indicaciones_plan=(
+            "Evaluación quirúrgica. Realizar examen abdominal, "
+            "hemograma, marcadores inflamatorios e imagen abdominal "
+            "según criterio clínico. Mantener vigilancia clínica "
+            "y valorar resolución quirúrgica."
+        ),
+        receta=(
+            "No corresponde manejo ambulatorio. Requiere valoración "
+            "hospitalaria y eventual tratamiento quirúrgico."
+        ),
+    ),
+
     personality="Ansioso",
-    language_level="B",
-    medical_history_recall="Low",
+    language_level="A",
+    medical_history_recall="High",
     cognitive_confusion="Normal",
     speaking_style="rioplatense",
 )
+
 
 DEMO_STUDENT = StudentProfile(
     id="40909342",
@@ -69,21 +158,34 @@ DEMO_STUDENT = StudentProfile(
     metadata={"source": "bootstrap_demo"},
 )
 
+
 DEMO_ENCOUNTER_ID = "enc_demo_activo"
+
 
 async def bootstrap_demo_data():
     """
-    Tell: Asegura que existan datos de prueba iniciales en la DB.
+    Asegura que existan datos de prueba iniciales en la DB.
     Usa el ServiceContainer para desacoplar la persistencia.
     """
+
     await services.patient_repo.upsert(DEMO_PATIENT)
-    logger.info(f"Paciente demo asegurado: {DEMO_PATIENT.name}")
+
+    logger.info(
+        f"Paciente demo asegurado: "
+        f"{DEMO_PATIENT.name} {DEMO_PATIENT.last_name}"
+    )
 
     await services.student_repo.upsert(DEMO_STUDENT)
-    logger.info(f"Alumno demo asegurado: {DEMO_STUDENT.name}")
+
+    logger.info(
+        f"Alumno demo asegurado: {DEMO_STUDENT.name}"
+    )
 
     try:
-        existing_encounter = await services.encounter_repo.get_by_id(DEMO_ENCOUNTER_ID, id_field="encounter_id")
+        existing_encounter = await services.encounter_repo.get_by_id(
+            DEMO_ENCOUNTER_ID,
+            id_field="encounter_id",
+        )
     except Exception:
         existing_encounter = None
 
@@ -92,13 +194,23 @@ async def bootstrap_demo_data():
         existing_encounter.student_id = DEMO_STUDENT.id
         existing_encounter.finished_at = None
         existing_encounter.is_completed_successfully = False
+
         existing_encounter.metadata = {
             **(existing_encounter.metadata or {}),
             "source": "bootstrap_demo",
             "auto_active": True,
         }
-        await services.encounter_repo.upsert(existing_encounter, id_field="encounter_id")
-        logger.info(f"Encounter demo reactivado: {existing_encounter.encounter_id}")
+
+        await services.encounter_repo.upsert(
+            existing_encounter,
+            id_field="encounter_id",
+        )
+
+        logger.info(
+            f"Encounter demo reactivado: "
+            f"{existing_encounter.encounter_id}"
+        )
+
         return
 
     demo_encounter = Encounter(
@@ -114,5 +226,13 @@ async def bootstrap_demo_data():
             "auto_active": True,
         },
     )
-    await services.encounter_repo.upsert(demo_encounter, id_field="encounter_id")
-    logger.info(f"Encounter demo creado: {demo_encounter.encounter_id}")
+
+    await services.encounter_repo.upsert(
+        demo_encounter,
+        id_field="encounter_id",
+    )
+
+    logger.info(
+        f"Encounter demo creado: "
+        f"{demo_encounter.encounter_id}"
+    )

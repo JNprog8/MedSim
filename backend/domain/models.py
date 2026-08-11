@@ -6,9 +6,10 @@ import uuid
 class PatientProfile(BaseModel):
     id: str = Field(..., description="Stable identifier (used by UI)")
     name: str
+    last_name: str = ""
     age: int
     region: str = Field("AMBA", description="Region within Argentina")
-    avatar: str = Field("young_male", description="Identifier for visual avatar")
+    avatar: str = Field("male", description="Identifier for visual avatar (male/female)")
     voice: str = Field("es-AR-male-1", description="Identifier for TTS voice")
 
     class TrueCaseReveal(BaseModel):
@@ -87,6 +88,7 @@ class PatientProfile(BaseModel):
         public_fields = {
             "id": self.id,
             "name": self.name,
+            "last_name": self.last_name,
             "age": self.age,
             "region": self.region,
             "avatar": self.avatar,

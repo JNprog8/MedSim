@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import EvaluatorLayout from '../components/EvaluatorLayout'
-import { Plus, Trash2, Save, ArrowLeft, X } from 'lucide-react'
+import { Plus, Trash2, Save, ArrowLeft, X, AlertTriangle } from 'lucide-react'
 
 interface Symptom {
   name: string
@@ -87,22 +87,14 @@ function TagInput({
 
 // Avatar definitions for visual selector
 const AVATAR_OPTIONS = [
-  { id: 'young_male', label: 'Joven Masc.', icon: 'face' },
-  { id: 'young_female', label: 'Joven Fem.', icon: 'face_3' },
-  { id: 'mid_male', label: 'Adulto Masc.', icon: 'person' },
-  { id: 'mid_female', label: 'Adulta Fem.', icon: 'person_3' },
-  { id: 'elderly_male', label: 'Mayor Masc.', icon: 'elderly' },
-  { id: 'elderly_female', label: 'Mayor Fem.', icon: 'elderly_3' }
+  { id: 'male', label: 'Hombre', gender: 'male', imgSrc: '/IMG/avatar_male.png' },
+  { id: 'female', label: 'Mujer', gender: 'female', imgSrc: '/IMG/avatar_female.png' }
 ]
 
 // Voice definitions for visual selector
 const VOICE_OPTIONS = [
-  { id: 'es-AR-male-1', label: 'Masculina 1 (Rioplatense)' },
-  { id: 'es-AR-female-1', label: 'Femenina 1 (Rioplatense)' },
-  { id: 'es-MX-male-1', label: 'Masculina 2 (Neutro)' },
-  { id: 'es-MX-female-1', label: 'Femenina 2 (Neutro)' },
-  { id: 'es-ES-male-1', label: 'Masculina 3 (España)' },
-  { id: 'es-ES-female-1', label: 'Femenina 3 (España)' }
+  { id: 'es-AR-male-1', label: 'Masculino (Argentino)' },
+  { id: 'es-AR-female-1', label: 'Femenino (Argentino)' }
 ]
 
 export default function PatientForm() {
@@ -121,7 +113,7 @@ export default function PatientForm() {
   const [pFirstName, setPFirstName] = useState('')
   const [pLastName, setPLastName] = useState('')
   const [pAge, setPAge] = useState('')
-  const pRegion = 'AMBA' // Fixed region
+  const pRegion = 'Viedma, Río Negro, Argentina' // Fixed region
 
   // Administrative Info
   const [pDob, setPDob] = useState('')
@@ -172,7 +164,7 @@ export default function PatientForm() {
   const [newSymptomDuration, setNewSymptomDuration] = useState<number>(1)
 
   // --- Visuals fields ---
-  const [selectedAvatar, setSelectedAvatar] = useState('young_male')
+  const [selectedAvatar, setSelectedAvatar] = useState('male')
   const [selectedVoice, setSelectedVoice] = useState('es-AR-male-1')
 
   useEffect(() => {
@@ -189,12 +181,11 @@ export default function PatientForm() {
       const p = await res.json()
 
       setPId(p.id)
-      const nameParts = (p.name || '').split(' ')
-      setPFirstName(nameParts[0] || '')
-      setPLastName(nameParts.slice(1).join(' ') || '')
+      setPFirstName(p.name || '')
+      setPLastName(p.last_name !== undefined && p.last_name !== null && p.last_name !== '' ? p.last_name : (p.administrative?.full_name ? p.administrative.full_name.replace(p.name || '', '').trim() : ''))
       setPAge(p.age?.toString() || '')
 
-      if (p.avatar) setSelectedAvatar(p.avatar)
+      if (p.avatar) setSelectedAvatar(p.avatar === 'female' || p.avatar?.includes('female') ? 'female' : 'male')
       if (p.voice) setSelectedVoice(p.voice)
 
       setPDob(p.administrative?.date_of_birth || '')
@@ -246,6 +237,61 @@ export default function PatientForm() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // --- Unsaved Changes & Navigation Modal State ---
+  const [initialSnapshot, setInitialSnapshot] = useState<string>('')
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const [targetPath, setTargetPath] = useState<string>('/patients')
+
+  const getFormSnapshot = () => JSON.stringify({
+    pFirstName, pLastName, pAge, pDob, pDni, pInsurance, pSex, pOccupation,
+    pTriage, pChief, pFeel, pSpontaneous, pConditional, pSecret, pDisplay,
+    pDiagnoses, pSurgeries, pAllergies, pMedications, pLabs, pImaging, pNotes,
+    pPersonality, pLanguageLevel, pMemoryLevel, pCognitive, pSpeakingStyle,
+    pTrueMain, pTrueDiffs, pTruePlan, pTrueRx, symptoms, selectedAvatar, selectedVoice
+  })
+
+  // Set initial snapshot once form is initialized
+  useEffect(() => {
+    if (!isEditMode) {
+      setInitialSnapshot(getFormSnapshot())
+    }
+  }, [isEditMode])
+
+  useEffect(() => {
+    if (isEditMode && !loading) {
+      setInitialSnapshot(getFormSnapshot())
+    }
+  }, [loading, isEditMode])
+
+  const isFormDirty = initialSnapshot !== '' && getFormSnapshot() !== initialSnapshot
+
+  // Prevent browser window close / reload with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isFormDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isFormDirty])
+
+  const handleNavigateAway = (path: string = '/patients') => {
+    if (isFormDirty) {
+      setTargetPath(path)
+      setShowUnsavedModal(true)
+    } else {
+      navigate(path)
+    }
+  }
+
+  const handleDiscardChanges = () => {
+    setInitialSnapshot('')
+    setShowUnsavedModal(false)
+    navigate(targetPath)
   }
 
   const handleAddSymptom = () => {
@@ -351,7 +397,7 @@ export default function PatientForm() {
     <EvaluatorLayout activePill="patients">
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => navigate('/patients')}
+          onClick={() => handleNavigateAway('/patients')}
           className="p-2 bg-white border border-slate-200 text-slate-500 rounded-xl hover:text-cyan-600 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -420,18 +466,22 @@ export default function PatientForm() {
                     {/* Avatar Selector */}
                     <div>
                       <label className="block text-xs font-bold text-slate-600 mb-2">Avatar 3D de la Entrevista</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         {AVATAR_OPTIONS.map(opt => (
                           <div
                             key={opt.id}
                             onClick={() => setSelectedAvatar(opt.id)}
-                            className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all ${selectedAvatar === opt.id
-                                ? 'border-cyan-500 bg-cyan-50 shadow-sm ring-2 ring-cyan-500/20'
-                                : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50'
+                            className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all ${selectedAvatar === opt.id
+                              ? 'border-cyan-500 bg-cyan-50 shadow-sm ring-2 ring-cyan-500/20'
+                              : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50'
                               }`}
                           >
-                            <span className="material-symbols-rounded text-3xl text-slate-600">{opt.icon}</span>
-                            <span className="text-[10px] font-bold text-slate-600 text-center">{opt.label}</span>
+                            <img
+                              src={opt.imgSrc}
+                              alt={opt.label}
+                              className="w-12 h-12 object-contain drop-shadow-sm"
+                            />
+                            <span className="text-xs font-bold text-slate-700 text-center">{opt.label}</span>
                           </div>
                         ))}
                       </div>
@@ -446,8 +496,8 @@ export default function PatientForm() {
                             key={opt.id}
                             onClick={() => setSelectedVoice(opt.id)}
                             className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center transition-all ${selectedVoice === opt.id
-                                ? 'border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-500/20'
-                                : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                              ? 'border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-500/20'
+                              : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
                               }`}
                           >
                             <span className="text-[11px] font-bold text-slate-600 text-center">{opt.label}</span>
@@ -731,21 +781,73 @@ export default function PatientForm() {
           <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
             <button
               type="button"
-              onClick={() => navigate('/patients')}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors text-sm"
+              onClick={() => handleNavigateAway('/patients')}
+              className="px-5 py-3 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-sm font-bold shadow-sm transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={formSaving}
-              className="flex items-center gap-2 px-6 py-2 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-500 active:scale-95 transition-all text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-800 to-cyan-900 text-white hover:brightness-105 active:scale-98 text-sm font-bold shadow-lg shadow-cyan-950/10 disabled:opacity-50 transition-all"
             >
               {formSaving ? 'Guardando...' : <><Save className="w-4 h-4" /> Guardar Paciente</>}
             </button>
           </div>
         </form>
       </div>
+
+      {/* Modal de Cambios sin Guardar */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-800 tracking-tight">
+                  ¿Tienes cambios sin guardar?
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Has realizado modificaciones en la ficha del paciente que no se han guardado aún.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+              ¿Deseas guardar los cambios antes de salir o prefieres descartarlos?
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowUnsavedModal(false)}
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-bold shadow-sm transition-colors"
+              >
+                Seguir Editando
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardChanges}
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-xl text-xs transition-colors"
+              >
+                Descartar Cambios
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  setShowUnsavedModal(false)
+                  handleSavePatient(e)
+                }}
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-800 to-cyan-900 text-white font-bold text-xs shadow-lg shadow-cyan-950/10 hover:brightness-105 active:scale-98 transition-all"
+              >
+                Guardar y Salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </EvaluatorLayout>
   )
 }

@@ -97,9 +97,6 @@ export default function StudentPortal({ view: initialView }: StudentPortalProps)
       const list = Array.isArray(data) ? data : (data.encounters || [])
       const active = list.find((enc: Encounter) => {
         if (!enc || enc.finished_at !== null) return false
-        if (localStorage.getItem(`medsim_finished_encounter_${enc.encounter_id}`) === 'true') {
-          return false
-        }
         return true
       })
 
