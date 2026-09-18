@@ -17,4 +17,5 @@ class ISTTService(ABC):
 class ITTSService(ABC):
     """Spec Definition: Interface para Text-to-Speech."""
     @abstractmethod
-    async def text_to_speech(self, text: str) -> bytes: ...
+    async def text_to_speech(self, text: str, **kwargs) -> bytes: ...
+

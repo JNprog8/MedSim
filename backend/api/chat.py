@@ -1,16 +1,7 @@
-from typing import Literal, Optional
-
-from fastapi import APIRouter, Body, HTTPException, Form, UploadFile, File, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Form, UploadFile, File, Request
 from backend.services.container import services
 
 router = APIRouter()
-
-
-class UnrealMessageRequest(BaseModel):
-    message: str
-    role: Literal["user", "assistant"] = "assistant"
-    audio_url: Optional[str] = None
 
 # Matches /api/chat
 @router.post("/chat")
@@ -43,33 +34,8 @@ async def audio_turn(
     if not encounter_id:
         raise HTTPException(status_code=400, detail="encounter_id is required")
         
-    return await services.audio_orchestrator.process_audio_input_by_mode(
+    return await services.audio_orchestrator.process_audio_file(
         encounter_id=encounter_id,
         audio_file=file,
-        mode="default",
     )
 
-# Matches /api/audio_turn/with_unreal
-@router.post("/audio_turn/with_unreal/{encounter_id}")
-async def audio_turn_with_unreal(
-    encounter_id: str,
-    file: UploadFile = File(...),
-):
-    return await services.audio_orchestrator.process_audio_input_by_mode(
-        encounter_id=encounter_id,
-        audio_file=file,
-        mode="unreal",
-    )
-
-
-@router.post("/chat/with_unreal/{encounter_id}")
-async def chat_with_unreal(
-    encounter_id: str,
-    payload: UnrealMessageRequest = Body(...),
-):
-    return await services.audio_orchestrator.append_external_message(
-        encounter_id=encounter_id,
-        role=payload.role,
-        text=payload.message,
-        audio_url=payload.audio_url,
-    )

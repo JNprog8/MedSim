@@ -58,8 +58,14 @@ class PatientFactory:
                 receta=true_rx or None,
             )
 
-        raw_avatar = str(payload.get("avatar") or "male").strip()
-        avatar = "female" if "female" in raw_avatar.lower() else "male"
+        raw_avatar = str(payload.get("avatar") or "").strip().lower()
+        avatar = "female" if "female" in raw_avatar else "male"
+
+        raw_voice = payload.get("voice")
+        if raw_voice is not None and str(raw_voice).strip() != "":
+            voice = str(raw_voice).strip()
+        else:
+            voice = "0" if avatar == "female" else "1"
 
         return PatientProfile(
             id=patient_id,
@@ -68,7 +74,7 @@ class PatientFactory:
             age=age,
             region=str(payload.get("region") or "AMBA").strip() or "AMBA",
             avatar=avatar,
-            voice=str(payload.get("voice") or "es-AR-male-1").strip() or "es-AR-male-1",
+            voice=voice,
             administrative=PatientProfile.AdministrativeInfo(
                 full_name=full_name or first_name or None,
                 date_of_birth=str(payload.get("date_of_birth") or "").strip() or None,

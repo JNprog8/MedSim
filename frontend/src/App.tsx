@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Home from './pages/Home'
+import Login from './pages/Login'
 import PatientsABM from './pages/PatientsABM'
 import PatientForm from './pages/PatientForm'
 import StudentsABM from './pages/StudentsABM'
@@ -10,11 +11,12 @@ import StudentSimulator from './pages/StudentSimulator'
 
 function App() {
   return (
-    <BrowserRouter basename="/frontend">
+    <BrowserRouter>
       <Routes>
-        {/* Navigation routes matching old URL structures */}
-        <Route path="/" element={<Navigate to="/index" replace />} />
-        <Route path="/index" element={<Home />} />
+        {/* Navigation routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/index" element={<Navigate to="/" replace />} />
         <Route path="/patients" element={<PatientsABM />} />
         <Route path="/patients/new" element={<PatientForm />} />
         <Route path="/patients/edit/:id" element={<PatientForm />} />
@@ -24,7 +26,7 @@ function App() {
         <Route path="/student_join" element={<StudentPortal view="join" />} />
         <Route path="/student_sessions" element={<StudentPortal view="sessions" />} />
         <Route path="/student" element={<StudentSimulator />} />
-        <Route path="*" element={<Navigate to="/index" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )

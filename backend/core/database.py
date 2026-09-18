@@ -21,9 +21,6 @@ async def connect_to_mongo():
     max_retries = 20
     retry_delay = 3
     
-    # Esperar a que el stack de red se asiente
-    await asyncio.sleep(3)
-    
     for attempt in range(1, max_retries + 1):
         try:
             # Construir URL final con credenciales si no están presentes y existen en settings

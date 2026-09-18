@@ -97,8 +97,8 @@ export default function EvaluatorEncounter() {
 
         // Fetch patient and student names to display
         const [patResp, stuResp] = await Promise.all([
-          fetch(`/api/patients/${encodeURIComponent(encData.patient_id)}/`),
-          encData.student_id ? fetch(`/api/students/${encodeURIComponent(encData.student_id)}/`) : Promise.resolve(null)
+          fetch(`/api/patients/${encodeURIComponent(encData.patient_id)}`),
+          encData.student_id ? fetch(`/api/students/${encodeURIComponent(encData.student_id)}`) : Promise.resolve(null)
         ])
 
         if (patResp.ok) {
@@ -164,12 +164,21 @@ export default function EvaluatorEncounter() {
 
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const wsUrl = `${proto}://${window.location.host}/ws/encounters/${encodeURIComponent(encounterId)}`
-    
+    let isMounted = true
+    let reconnectTimeout: any = null
+
     const connect = () => {
+      if (!isMounted) return
       const socket = new WebSocket(wsUrl)
       wsRef.current = socket
 
+      socket.onopen = () => {
+        if (!isMounted) return
+        setStatusMsg('Conectado en tiempo real')
+      }
+
       socket.onmessage = (event) => {
+        if (!isMounted) return
         let payload: any = null
         try {
           payload = JSON.parse(event.data)
@@ -178,15 +187,17 @@ export default function EvaluatorEncounter() {
         }
 
         if (payload.type === 'snapshot') {
-          setFinishedAt(payload.finished_at)
           const list = Array.isArray(payload.messages) ? payload.messages : []
-          setMessages(list.filter((m: any) => m.role !== 'system'))
+          setMessages(list)
+          if (payload.finished_at !== undefined) {
+            setFinishedAt(payload.finished_at)
+          }
           return
         }
 
-        if (payload.type === 'message_added' || (payload.role && payload.content)) {
+        if (payload.type === 'message_added' || (payload?.role && payload?.content)) {
           const msg = payload.type === 'message_added' ? payload.event : payload
-          if (msg.role !== 'system') {
+          if (msg && msg.role) {
             setMessages(prev => {
               if (prev.some(m => m.message_id === msg.message_id)) return prev
               return [...prev, msg]
@@ -218,14 +229,17 @@ export default function EvaluatorEncounter() {
       }
 
       socket.onclose = () => {
-        // Reconnect after 3 seconds
-        setTimeout(() => connect(), 3000)
+        if (isMounted) {
+          reconnectTimeout = setTimeout(() => connect(), 3000)
+        }
       }
     }
 
     connect()
 
     return () => {
+      isMounted = false
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
       if (wsRef.current) {
         wsRef.current.close()
       }

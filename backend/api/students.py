@@ -10,6 +10,7 @@ async def list_students():
     return await services.student_service.get_all_students()
 
 @router.get("/{student_id}", response_model=StudentProfile)
+@router.get("/{student_id}/", response_model=StudentProfile, include_in_schema=False)
 async def get_student(student_id: str):
     student = await services.student_service.get_student_id(student_id)
     if not student:

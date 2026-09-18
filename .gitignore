@@ -50,3 +50,12 @@ htmlcov/
 logs/*.log
 logs/*.txt
 !logs/.keep
+
+# Salidas locales de pruebas y grabaciones generadas
+/backend_server.*.log
+/curl_headers.txt
+/curl_response.json
+/scratch_test_*.py
+/backend/unreal_audio_uploads/
+frontend/dist/
+frontend/node_modules/

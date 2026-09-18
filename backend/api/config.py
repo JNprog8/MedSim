@@ -6,7 +6,17 @@ router = APIRouter()
 @router.get("/config_state")
 async def get_config_state():
     stt_configured = bool(settings.STT_API_KEY)
-    tts_configured = bool(settings.TTS_API_KEY)
+    tts_url = (settings.TTS_API_URL or "").lower()
+    tts_is_local = bool(
+        "audio/tts" in tts_url
+        or "piper" in tts_url
+        or "tts-ar" in tts_url
+        or "http://tts" in tts_url
+        or "localhost" in tts_url
+        or "127.0.0.1" in tts_url
+        or "host.docker.internal" in tts_url
+    )
+    tts_configured = bool(settings.TTS_API_KEY) or tts_is_local
     return {
         "server": {"schema_version": 3},
         "llm": {

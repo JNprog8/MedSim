@@ -173,14 +173,19 @@ export default function StudentSimulator() {
   useEffect(() => {
     if (!encounterId || loading) return
 
+    let isMounted = true
+    let reconnectTimeout: any = null
+
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const url = `${proto}://${window.location.host}/ws/encounters/${encodeURIComponent(encounterId)}?session_id=${encodeURIComponent(sessionId)}`
 
     const connect = () => {
+      if (!isMounted) return
       const socket = new WebSocket(url)
       wsRef.current = socket
 
       socket.onmessage = (event) => {
+        if (!isMounted) return
         let payload: any = null
         try {
           payload = JSON.parse(event.data)
@@ -243,16 +248,20 @@ export default function StudentSimulator() {
       }
 
       socket.onclose = () => {
-        setTimeout(() => connect(), 3000)
+        if (isMounted) {
+          reconnectTimeout = setTimeout(() => connect(), 3000)
+        }
       }
     }
 
     connect()
 
     return () => {
+      isMounted = false
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
       if (wsRef.current) wsRef.current.close()
     }
-  }, [encounterId, loading])
+  }, [encounterId, loading, sessionId])
 
   // Scroll to bottom whenever messages list updates
   useEffect(() => {
@@ -539,7 +548,7 @@ export default function StudentSimulator() {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
-              to="/index"
+              to="/"
               className="w-9 h-9 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-600 transition-colors shadow-sm"
               aria-label="Salir"
             >

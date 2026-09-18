@@ -10,7 +10,7 @@ class PatientProfile(BaseModel):
     age: int
     region: str = Field("AMBA", description="Region within Argentina")
     avatar: str = Field("male", description="Identifier for visual avatar (male/female)")
-    voice: str = Field("es-AR-male-1", description="Identifier for TTS voice")
+    voice: str = Field("1", description="Identifier for TTS voice")
 
     class TrueCaseReveal(BaseModel):
         diagnostico_principal: str
