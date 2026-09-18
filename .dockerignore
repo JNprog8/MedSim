@@ -1,0 +1,50 @@
+# Control de versiones
+.git/
+.gitignore
+
+# Entornos virtuales Python
+.venv/
+venv/
+ENV/
+
+# Caché Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# Dependencias Node (se reinstalan en el build)
+frontend/node_modules/
+
+# Build del frontend (se genera en el build)
+frontend/dist/
+
+# Variables de entorno secretas
+.env
+.env.*
+**/.env
+**/.env.*
+backend/unreal_audio_uploads/
+tests/
+
+# IDE y herramientas locales
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+backend_server.*.log
+
+# Archivos de desarrollo / testing
+scratch_test_*.py
+curl_headers.txt
+curl_response.json
+pyrightconfig.json
+
+# Docs (no necesarias en producción)
+docs/

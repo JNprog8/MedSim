@@ -40,6 +40,8 @@ podman-guide.md
 
 # FastAPI/Uvicorn
 .env
+.env.*
+!.env.example
 .pytest_cache/
 .coverage
 htmlcov/

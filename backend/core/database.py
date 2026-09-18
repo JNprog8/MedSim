@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import socket
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from motor.motor_asyncio import AsyncIOMotorClient
 from .config import settings
 
@@ -31,7 +31,9 @@ async def connect_to_mongo():
             if settings.MONGO_USER and settings.MONGO_PASSWORD and "@" not in mongo_url:
                 prefix = "mongodb://"
                 if mongo_url.startswith(prefix):
-                    mongo_url = f"{prefix}{settings.MONGO_USER}:{settings.MONGO_PASSWORD}@{mongo_url[len(prefix):]}"
+                    user = quote(settings.MONGO_USER, safe="")
+                    password = quote(settings.MONGO_PASSWORD, safe="")
+                    mongo_url = f"{prefix}{user}:{password}@{mongo_url[len(prefix):]}"
                     # Si no hay authSource, añadir admin por defecto para asegurar autenticación exitosa
                     if "authSource" not in mongo_url:
                         sep = "&" if "?" in mongo_url else "?"

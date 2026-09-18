@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,7 +9,14 @@ class Settings(BaseSettings):
     # --- PROYECTO ---
     PROJECT_NAME: str = "MedSim"
     DEBUG: bool = False
-    PORT: int = 8000
+    HOST: str = "0.0.0.0"
+    PORT: int = Field(default=8000, ge=1, le=65535)
+    BOOTSTRAP_DEMO: bool = False
+    LOG_LEVEL: Literal["critical", "error", "warning", "info", "debug", "trace"] = "info"
+    ACCESS_LOG: bool = True
+    PROXY_HEADERS: bool = False
+    FORWARDED_ALLOW_IPS: str = "127.0.0.1"
+    GRACEFUL_TIMEOUT_SECONDS: int = Field(default=30, ge=1)
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
     # --- MONGO DB ---

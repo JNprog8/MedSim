@@ -18,7 +18,8 @@ async def lifespan(app: FastAPI):
     await connect_to_mongo()
     db = get_database()
     services.wire(db)
-    await bootstrap_demo_data()
+    if settings.BOOTSTRAP_DEMO:
+        await bootstrap_demo_data()
     yield
     # Shutdown
     await close_mongo_connection()
@@ -87,5 +88,5 @@ async def ws_encounter_stream(websocket: WebSocket, encounter_id: str):
         await services.realtime_hub.unsubscribe(encounter_id, websocket)
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=settings.PORT, reload=settings.DEBUG)
+    from backend.run import run
+    run()

@@ -63,6 +63,9 @@ export default function EvaluatorEncounter() {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   
+  // Debounce reference for auto-save
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // WebSocket reference
   const wsRef = useRef<WebSocket | null>(null)
 
@@ -230,7 +233,8 @@ export default function EvaluatorEncounter() {
   }, [encounterId, loading])
 
   // Save/Upsert evaluation
-  const handleSaveEvaluation = async (updatedEval: Evaluation) => {
+  // silent=true -> no status messages shown (used by auto-save)
+  const handleSaveEvaluation = async (updatedEval: Evaluation, silent = false) => {
     if (!updatedEval) return
     
     // Sync names
@@ -242,7 +246,7 @@ export default function EvaluatorEncounter() {
     }
 
     try {
-      setStatusMsg('Guardando evaluación...')
+      if (!silent) setStatusMsg('Guardando evaluación...')
       const resp = await fetch('/api/evaluations/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -254,8 +258,10 @@ export default function EvaluatorEncounter() {
       if (data.evaluation) {
         setEvaluation(data.evaluation)
       }
-      setStatusMsg('Evaluación guardada exitosamente.')
-      setTimeout(() => setStatusMsg(''), 3000)
+      if (!silent) {
+        setStatusMsg('Evaluación guardada exitosamente.')
+        setTimeout(() => setStatusMsg(''), 3000)
+      }
     } catch (err: any) {
       setStatusMsg(`Error al guardar: ${err.message || err}`)
     }
@@ -275,8 +281,11 @@ export default function EvaluatorEncounter() {
     const updatedEval = { ...evaluation, items: updatedItems }
     setEvaluation(updatedEval)
     
-    // Auto-save with a small debounce or direct save
-    handleSaveEvaluation(updatedEval)
+    // Debounced silent auto-save: espera 800ms desde el último cambio
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      handleSaveEvaluation(updatedEval, true)
+    }, 800)
   }
 
   const handleFinishEncounter = async () => {
@@ -556,13 +565,13 @@ export default function EvaluatorEncounter() {
                               </label>
                             </div>
                             
-                            {/* Notes input */}
-                            <input 
-                              type="text" 
+                            {/* Notes textarea – resizable vertically */}
+                            <textarea
                               placeholder="Observación o nota..."
                               value={note}
+                              rows={1}
                               onChange={(e) => handleUpdateItem(item.id, 'notes', e.target.value)}
-                              className="flex-1 min-w-[180px] bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-2xs outline-none focus:border-cyan-500 transition-colors"
+                              className="flex-1 min-w-[180px] bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-2xs outline-none focus:border-cyan-500 transition-colors resize-y"
                             />
                           </div>
                         </div>
