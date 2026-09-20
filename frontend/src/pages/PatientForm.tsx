@@ -91,10 +91,142 @@ function TagInput({
 }
 
 // Avatar definitions for visual selector
-const AVATAR_OPTIONS = [
-  { id: 'male', label: 'Hombre', gender: 'male', imgSrc: '/IMG/avatar_male.png' },
-  { id: 'female', label: 'Mujer', gender: 'female', imgSrc: '/IMG/avatar_female.png' }
-]
+// DESACTIVADO: el selector manual de avatar se ocultó de la UI. El avatar ahora
+// se deriva del Sexo Registrado (y, para "otro", de la voz elegida).
+// Se conserva por si se vuelve a habilitar la selección manual más adelante.
+// const AVATAR_OPTIONS = [
+//   { id: 'male', label: 'Hombre', gender: 'male', imgSrc: '/IMG/avatar_male.png' },
+//   { id: 'female', label: 'Mujer', gender: 'female', imgSrc: '/IMG/avatar_female.png' }
+// ]
+
+// -----------------------------------------------------------------------------
+// SECCION "VISUAL Y AUDIO" (DESACTIVADA)
+// Se retiro del formulario: el avatar y la voz ahora se derivan del campo
+// "Sexo Registrado" (ver SEX_OPTIONS). Se conserva el JSX original tal cual
+// estaba, por si hace falta volver a mostrar la seleccion manual.
+//
+//                 {/* Avatar and Voice */}
+//                 <div>
+//                   <h4 className="text-xs font-extrabold uppercase text-cyan-900 tracking-wider mb-3 pb-1 border-b border-slate-100">Visual y Audio</h4>
+//                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+//                     {/* Avatar Selector */}
+//                     <div className="lg:col-span-4">
+//                       <label className="block text-xs font-bold text-slate-600 mb-2">Avatar 3D de la Entrevista</label>
+//                       <div className="grid grid-cols-2 gap-3">
+//                         {AVATAR_OPTIONS.map(opt => (
+//                           <div
+//                             key={opt.id}
+//                             onClick={() => {
+//                               setSelectedAvatar(opt.id)
+//                             }}
+//                             className={`cursor-pointer border rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all ${selectedAvatar === opt.id
+//                               ? 'border-cyan-600 bg-cyan-50/70 shadow-sm ring-2 ring-cyan-500/20'
+//                               : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50'
+//                               }`}
+//                           >
+//                             <img
+//                               src={opt.imgSrc}
+//                               alt={opt.label}
+//                               className="w-14 h-14 object-contain drop-shadow-sm"
+//                             />
+//                             <span className="text-xs font-bold text-slate-800 text-center">{opt.label}</span>
+//                           </div>
+//                         ))}
+//                       </div>
+//                     </div>
+//
+//                     {/* Voice Selector */}
+//                     <div className="lg:col-span-8">
+//                       <div className="flex items-center justify-between mb-1">
+//                         <label className="block text-xs font-bold text-slate-600">Voz de Síntesis</label>
+//                         <span className="text-[11px] text-cyan-800 font-semibold bg-cyan-50 px-2.5 py-0.5 rounded-lg border border-cyan-200/60">
+//                           {VOICE_OPTIONS.find(v => v.id === selectedVoice || (selectedVoice === 'es-AR-male-1' && v.id === '1') || (selectedVoice === 'es-AR-female-1' && v.id === '0'))?.name || 'Voz seleccionada'}
+//                         </span>
+//                       </div>
+//                       <p className="text-[11px] text-slate-400 mb-2.5">
+//                         Haz clic en una voz para seleccionarla y escuchar su muestra: <span className="italic text-slate-500 font-medium">"Hola, ¿cómo estás? Esta es mi voz."</span>
+//                       </p>
+//                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+//                         {VOICE_OPTIONS.map(opt => {
+//                           const isSelected = selectedVoice === opt.id ||
+//                             (selectedVoice === 'es-AR-male-1' && opt.id === '1') ||
+//                             (selectedVoice === 'es-AR-female-1' && opt.id === '0')
+//                           const isPlaying = playingVoiceId === opt.id
+//
+//                           return (
+//                             <div
+//                               key={opt.id}
+//                               onClick={() => {
+//                                 setSelectedVoice(opt.id)
+//                                 playVoiceSample(opt.id)
+//                               }}
+//                               className={`cursor-pointer border rounded-2xl p-3.5 flex items-center justify-between transition-all relative ${isSelected
+//                                 ? 'border-cyan-600 bg-cyan-50/80 shadow-md ring-2 ring-cyan-500/25'
+//                                 : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50/80'
+//                                 } ${isPlaying ? 'ring-2 ring-teal-500/60' : ''}`}
+//                             >
+//                               <div className="flex items-center gap-2.5">
+//                                 <button
+//                                   type="button"
+//                                   onClick={(e) => {
+//                                     e.stopPropagation()
+//                                     setSelectedVoice(opt.id)
+//                                     playVoiceSample(opt.id)
+//                                   }}
+//                                   title={isPlaying ? "Pausar muestra" : "Escuchar muestra de audio"}
+//                                   className={`p-2 rounded-xl transition-all ${isPlaying
+//                                     ? 'bg-teal-600 text-white animate-pulse'
+//                                     : isSelected
+//                                       ? 'bg-cyan-600 text-white'
+//                                       : 'bg-slate-100 text-slate-500 hover:bg-cyan-100 hover:text-cyan-700'
+//                                     }`}
+//                                 >
+//                                   {isPlaying ? (
+//                                     <Square className="w-4 h-4 fill-current" />
+//                                   ) : (
+//                                     <Volume2 className="w-4 h-4" />
+//                                   )}
+//                                 </button>
+//                                 <span className="text-sm font-bold text-slate-800">{opt.name}</span>
+//                               </div>
+//                               <div className="flex items-center gap-1.5">
+//                                 {isPlaying && (
+//                                   <span className="text-[10px] font-bold text-teal-700 bg-teal-100/80 px-2 py-0.5 rounded-full animate-pulse">
+//                                     Audio
+//                                   </span>
+//                                 )}
+//                                 {isSelected && (
+//                                   <span className="w-5 h-5 rounded-full bg-cyan-600 text-white flex items-center justify-center text-[11px] shrink-0 font-bold">✓</span>
+//                                 )}
+//                               </div>
+//                             </div>
+//                           )
+//                         })}
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+// -----------------------------------------------------------------------------
+
+// Sexo registrado del paciente (espeja el enum PatientSex del backend).
+// Es la fuente de verdad del género: define la concordancia en el system prompt
+// y la voz de síntesis por defecto.
+const SEX_OPTIONS = [
+  { id: 'masculino', label: 'Hombre', voiceId: '1', avatar: 'male' },
+  { id: 'femenino', label: 'Mujer', voiceId: '0', avatar: 'female' },
+  { id: 'otro', label: 'Otro', voiceId: null, avatar: null },
+] as const
+
+type SexId = typeof SEX_OPTIONS[number]['id'] | ''
+
+// Normaliza valores libres heredados ("Masculino", "M", "male", ...) al enum.
+const normalizeSex = (raw: unknown): SexId => {
+  const v = String(raw ?? '').trim().toLowerCase()
+  if (!v) return ''
+  if (['masculino', 'masculine', 'm', 'male', 'hombre', 'varon', 'varón', 'h'].includes(v)) return 'masculino'
+  if (['femenino', 'femenina', 'f', 'female', 'mujer'].includes(v)) return 'femenino'
+  return 'otro'
+}
 
 // Catálogo de Voces de Síntesis Clínica
 const VOICE_OPTIONS = [
@@ -133,7 +265,7 @@ export default function PatientForm() {
   const [pDob, setPDob] = useState('')
   const [pDni, setPDni] = useState('')
   const [pInsurance, setPInsurance] = useState('')
-  const [pSex, setPSex] = useState('')
+  const [pSex, setPSex] = useState<SexId>('')
   const [pOccupation, setPOccupation] = useState('')
 
   // Clinical Context
@@ -178,10 +310,32 @@ export default function PatientForm() {
   const [newSymptomDuration, setNewSymptomDuration] = useState<number>(1)
 
   // --- Visuals fields ---
-  const [selectedAvatar, setSelectedAvatar] = useState('male')
+  // El avatar ya no se elige a mano: se deriva del sexo registrado.
+  // Para "otro" (o sin dato) acompaña a la voz seleccionada.
   const [selectedVoice, setSelectedVoice] = useState('0')
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Avatar derivado del sexo registrado (o de la voz, si el sexo es "otro").
+  const selectedAvatar =
+    pSex === 'femenino' ? 'female'
+      : pSex === 'masculino' ? 'male'
+        : (selectedVoice === '0' ? 'female' : 'male')
+
+  // El sexo manda: al elegir Hombre o Mujer se fija la voz correspondiente.
+  // Con "Otro" el docente elige libremente entre ambas voces.
+  const handleSexChange = (nextSex: SexId) => {
+    setPSex(nextSex)
+    const option = SEX_OPTIONS.find(o => o.id === nextSex)
+    if (option?.voiceId) {
+      setSelectedVoice(option.voiceId)
+    }
+  }
+
+  // Voces ofrecidas segun el sexo registrado.
+  const availableVoices = pSex === 'otro'
+    ? VOICE_OPTIONS
+    : VOICE_OPTIONS.filter(v => v.id === SEX_OPTIONS.find(o => o.id === pSex)?.voiceId)
 
   const playVoiceSample = (voiceId: string) => {
     // Si ya está reproduciendo este mismo audio, lo detenemos (toggle)
@@ -242,14 +396,13 @@ export default function PatientForm() {
       setPLastName(p.last_name !== undefined && p.last_name !== null && p.last_name !== '' ? p.last_name : (p.administrative?.full_name ? p.administrative.full_name.replace(p.name || '', '').trim() : ''))
       setPAge(p.age?.toString() || '')
 
-      if (p.avatar) setSelectedAvatar(p.avatar === 'female' || p.avatar?.includes('female') ? 'female' : 'male')
       if (p.voice !== undefined && p.voice !== null && p.voice !== '') setSelectedVoice(String(p.voice))
 
 
       setPDob(p.administrative?.date_of_birth || '')
       setPDni(p.administrative?.dni || '')
       setPInsurance(p.administrative?.insurance || '')
-      setPSex(p.administrative?.sex || '')
+      setPSex(normalizeSex(p.administrative?.sex))
       setPOccupation(p.administrative?.occupation || '')
 
       setPTriage(p.triage?.reference_short || '')
@@ -307,7 +460,7 @@ export default function PatientForm() {
     pTriage, pChief, pFeel, pSpontaneous, pConditional, pSecret, pDisplay,
     pDiagnoses, pSurgeries, pAllergies, pMedications, pLabs, pImaging, pNotes,
     pPersonality, pLanguageLevel, pMemoryLevel, pCognitive, pSpeakingStyle,
-    pTrueMain, pTrueDiffs, pTruePlan, pTrueRx, symptoms, selectedAvatar, selectedVoice
+    pTrueMain, pTrueDiffs, pTruePlan, pTrueRx, symptoms, selectedVoice
   })
 
   // Set initial snapshot once form is initialized
@@ -517,108 +670,6 @@ export default function PatientForm() {
                   </div>
                 </div>
 
-                {/* Avatar and Voice */}
-                <div>
-                  <h4 className="text-xs font-extrabold uppercase text-cyan-900 tracking-wider mb-3 pb-1 border-b border-slate-100">Visual y Audio</h4>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Avatar Selector */}
-                    <div className="lg:col-span-4">
-                      <label className="block text-xs font-bold text-slate-600 mb-2">Avatar 3D de la Entrevista</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {AVATAR_OPTIONS.map(opt => (
-                          <div
-                            key={opt.id}
-                            onClick={() => {
-                              setSelectedAvatar(opt.id)
-                            }}
-                            className={`cursor-pointer border rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all ${selectedAvatar === opt.id
-                              ? 'border-cyan-600 bg-cyan-50/70 shadow-sm ring-2 ring-cyan-500/20'
-                              : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50'
-                              }`}
-                          >
-                            <img
-                              src={opt.imgSrc}
-                              alt={opt.label}
-                              className="w-14 h-14 object-contain drop-shadow-sm"
-                            />
-                            <span className="text-xs font-bold text-slate-800 text-center">{opt.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Voice Selector */}
-                    <div className="lg:col-span-8">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-bold text-slate-600">Voz de Síntesis</label>
-                        <span className="text-[11px] text-cyan-800 font-semibold bg-cyan-50 px-2.5 py-0.5 rounded-lg border border-cyan-200/60">
-                          {VOICE_OPTIONS.find(v => v.id === selectedVoice || (selectedVoice === 'es-AR-male-1' && v.id === '1') || (selectedVoice === 'es-AR-female-1' && v.id === '0'))?.name || 'Voz seleccionada'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 mb-2.5">
-                        Haz clic en una voz para seleccionarla y escuchar su muestra: <span className="italic text-slate-500 font-medium">"Hola, ¿cómo estás? Esta es mi voz."</span>
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {VOICE_OPTIONS.map(opt => {
-                          const isSelected = selectedVoice === opt.id || 
-                            (selectedVoice === 'es-AR-male-1' && opt.id === '1') || 
-                            (selectedVoice === 'es-AR-female-1' && opt.id === '0')
-                          const isPlaying = playingVoiceId === opt.id
-
-                          return (
-                            <div
-                              key={opt.id}
-                              onClick={() => {
-                                setSelectedVoice(opt.id)
-                                playVoiceSample(opt.id)
-                              }}
-                              className={`cursor-pointer border rounded-2xl p-3.5 flex items-center justify-between transition-all relative ${isSelected
-                                ? 'border-cyan-600 bg-cyan-50/80 shadow-md ring-2 ring-cyan-500/25'
-                                : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50/80'
-                                } ${isPlaying ? 'ring-2 ring-teal-500/60' : ''}`}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelectedVoice(opt.id)
-                                    playVoiceSample(opt.id)
-                                  }}
-                                  title={isPlaying ? "Pausar muestra" : "Escuchar muestra de audio"}
-                                  className={`p-2 rounded-xl transition-all ${isPlaying
-                                    ? 'bg-teal-600 text-white animate-pulse'
-                                    : isSelected
-                                      ? 'bg-cyan-600 text-white'
-                                      : 'bg-slate-100 text-slate-500 hover:bg-cyan-100 hover:text-cyan-700'
-                                    }`}
-                                >
-                                  {isPlaying ? (
-                                    <Square className="w-4 h-4 fill-current" />
-                                  ) : (
-                                    <Volume2 className="w-4 h-4" />
-                                  )}
-                                </button>
-                                <span className="text-sm font-bold text-slate-800">{opt.name}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                {isPlaying && (
-                                  <span className="text-[10px] font-bold text-teal-700 bg-teal-100/80 px-2 py-0.5 rounded-full animate-pulse">
-                                    Audio
-                                  </span>
-                                )}
-                                {isSelected && (
-                                  <span className="w-5 h-5 rounded-full bg-cyan-600 text-white flex items-center justify-center text-[11px] shrink-0 font-bold">✓</span>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Adm Info */}
                 <div>
                   <h4 className="text-xs font-extrabold uppercase text-cyan-900 tracking-wider mb-3 pb-1 border-b border-slate-100">Datos Administrativos (Evolución)</h4>
@@ -637,7 +688,76 @@ export default function PatientForm() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 mb-1">Sexo Registrado</label>
-                      <input type="text" value={pSex} onChange={e => setPSex(e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-cyan-500 transition-colors text-sm" />
+                      <select
+                        value={pSex}
+                        onChange={e => handleSexChange(e.target.value as SexId)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-cyan-500 transition-colors text-sm"
+                      >
+                        <option value="">Sin especificar</option>
+                        {SEX_OPTIONS.map(opt => (
+                          <option key={opt.id} value={opt.id}>{opt.label}</option>
+                        ))}
+                      </select>
+
+                      {/* Voz de sintesis asociada al sexo registrado */}
+                      {pSex && (
+                        <div className="mt-2.5">
+                          <p className="text-[11px] text-slate-400 mb-1.5">
+                            {pSex === 'otro'
+                              ? 'Elegí con qué voz hablará el paciente:'
+                              : 'Voz del paciente. Tocá para escuchar la muestra:'}
+                          </p>
+                          <div className="space-y-2">
+                            {availableVoices.map(opt => {
+                              const isSelected = selectedVoice === opt.id
+                              const isPlaying = playingVoiceId === opt.id
+                              const selectable = pSex === 'otro'
+
+                              return (
+                                <div
+                                  key={opt.id}
+                                  onClick={() => {
+                                    if (selectable) setSelectedVoice(opt.id)
+                                    playVoiceSample(opt.id)
+                                  }}
+                                  className={`cursor-pointer border rounded-xl px-3 py-2 flex items-center justify-between transition-all ${isSelected
+                                    ? 'border-cyan-600 bg-cyan-50/80 ring-2 ring-cyan-500/25'
+                                    : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50/80'
+                                    } ${isPlaying ? 'ring-2 ring-teal-500/60' : ''}`}
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (selectable) setSelectedVoice(opt.id)
+                                        playVoiceSample(opt.id)
+                                      }}
+                                      title={isPlaying ? 'Pausar muestra' : 'Escuchar muestra de audio'}
+                                      className={`p-1.5 rounded-lg transition-all ${isPlaying
+                                        ? 'bg-teal-600 text-white animate-pulse'
+                                        : isSelected
+                                          ? 'bg-cyan-600 text-white'
+                                          : 'bg-slate-100 text-slate-500 hover:bg-cyan-100 hover:text-cyan-700'
+                                        }`}
+                                    >
+                                      {isPlaying ? (
+                                        <Square className="w-3.5 h-3.5 fill-current" />
+                                      ) : (
+                                        <Volume2 className="w-3.5 h-3.5" />
+                                      )}
+                                    </button>
+                                    <span className="text-xs font-bold text-slate-800">{opt.name}</span>
+                                  </div>
+                                  {isSelected && (
+                                    <span className="w-4 h-4 rounded-full bg-cyan-600 text-white flex items-center justify-center text-[10px] shrink-0 font-bold">✓</span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 mb-1">Ocupación</label>

@@ -739,7 +739,7 @@ export default function StudentSimulator() {
                       <div className="flex justify-between"><span className="text-slate-500">Obra Social / Prepaga</span><span className="font-bold text-slate-800">{patient.administrative.insurance}</span></div>
                     )}
                     {patient.administrative.sex && (
-                      <div className="flex justify-between"><span className="text-slate-500">Sexo</span><span className="font-bold text-slate-800">{patient.administrative.sex}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Sexo</span><span className="font-bold text-slate-800 capitalize">{patient.administrative.sex}</span></div>
                     )}
                     {patient.administrative.occupation && (
                       <div className="flex justify-between"><span className="text-slate-500">Ocupación</span><span className="font-bold text-slate-800">{patient.administrative.occupation}</span></div>

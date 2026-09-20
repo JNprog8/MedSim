@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from backend.domain.models import PatientProfile
+from backend.domain.models import PatientProfile, PatientSex
 
 class PatientFactory:
     """
@@ -58,14 +58,28 @@ class PatientFactory:
                 receta=true_rx or None,
             )
 
-        raw_avatar = str(payload.get("avatar") or "").strip().lower()
-        avatar = "female" if "female" in raw_avatar else "male"
+        # El sexo registrado es la fuente de verdad del género del paciente:
+        # de él se derivan la voz de síntesis y el avatar cuando no vienen explícitos.
+        sex = PatientSex.coerce(payload.get("sex"))
 
         raw_voice = payload.get("voice")
         if raw_voice is not None and str(raw_voice).strip() != "":
             voice = str(raw_voice).strip()
+        elif sex == PatientSex.FEMENINO:
+            voice = "0"
         else:
-            voice = "0" if avatar == "female" else "1"
+            voice = "1"
+
+        raw_avatar = str(payload.get("avatar") or "").strip().lower()
+        if raw_avatar:
+            avatar = "female" if "female" in raw_avatar else "male"
+        elif sex == PatientSex.FEMENINO:
+            avatar = "female"
+        elif sex == PatientSex.MASCULINO:
+            avatar = "male"
+        else:
+            # "Otro" o sin dato: el avatar acompaña a la voz elegida.
+            avatar = "female" if voice == "0" else "male"
 
         return PatientProfile(
             id=patient_id,
@@ -80,7 +94,7 @@ class PatientFactory:
                 date_of_birth=str(payload.get("date_of_birth") or "").strip() or None,
                 dni=str(payload.get("dni") or "").strip() or None,
                 insurance=str(payload.get("insurance") or "").strip() or None,
-                sex=str(payload.get("sex") or "").strip() or None,
+                sex=sex,
                 occupation=str(payload.get("occupation") or "").strip() or None,
             ),
             triage=PatientProfile.TriageInfo(reference_short=triage_short or None),

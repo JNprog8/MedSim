@@ -1,8 +1,45 @@
 import json
 from typing import List
-from backend.domain.models import PatientProfile
+from backend.domain.models import PatientProfile, PatientSex
 
 class PromptService:
+    def _gender_hints(self, profile: PatientProfile) -> str:
+        """
+        Traduce el sexo registrado del paciente en instrucciones de identidad y
+        concordancia gramatical. El género NUNCA se infiere del nombre: sale de
+        este campo (`administrative.sex`).
+        """
+        sex = PatientSex.coerce(getattr(profile.administrative, "sex", None))
+
+        if sex == PatientSex.MASCULINO:
+            return (
+                "Sos un HOMBRE (varón). Hablás de vos mismo SIEMPRE en masculino: "
+                "'estoy cansado', 'me quedé preocupado', 'vine solo', 'estoy dolorido'. "
+                "Si el médico se refiere a vos en femenino, no lo corrijas de forma brusca: "
+                "simplemente seguís hablando de vos en masculino."
+            )
+        elif sex == PatientSex.FEMENINO:
+            return (
+                "Sos una MUJER. Hablás de vos misma SIEMPRE en femenino: "
+                "'estoy cansada', 'me quedé preocupada', 'vine sola', 'estoy dolorida'. "
+                "Si el médico se refiere a vos en masculino, no lo corrijas de forma brusca: "
+                "simplemente seguís hablando de vos en femenino."
+            )
+        elif sex == PatientSex.OTRO:
+            return (
+                "Tu identidad de género no es ni masculina ni femenina (registrada como 'otro'). "
+                "Evitá marcar género al hablar de vos: usá construcciones neutras "
+                "('me siento mal', 'tengo dolor', 'estoy con náuseas', 'vine sin compañía') "
+                "en lugar de adjetivos marcados como 'cansado'/'cansada'. "
+                "No expliques ni tematices tu identidad salvo que el médico te pregunte "
+                "directamente por ella, y en ese caso respondé con naturalidad y brevedad."
+            )
+        else : return (
+            "No hay un sexo registrado para este paciente. Evitá marcar género al hablar de vos: "
+            "usá construcciones neutras ('me siento mal', 'tengo dolor') en lugar de "
+            "adjetivos marcados como 'cansado'/'cansada'."
+        )
+
     def _doctor_treatment(self, profile: PatientProfile) -> str:
         try:
             if int(profile.age) >= 55:
@@ -37,6 +74,8 @@ class PromptService:
         surgeries = ", ".join(profile.institutional_history.surgeries) if profile.institutional_history and profile.institutional_history.surgeries else "Ninguna declarada"
         allergies = ", ".join(profile.institutional_history.allergies) if profile.institutional_history and profile.institutional_history.allergies else "Ninguna conocida"
         medications = ", ".join(profile.institutional_history.medications_current) if profile.institutional_history and profile.institutional_history.medications_current else "Ninguna declarada"
+
+        gender_hints = self._gender_hints(profile)
 
         spontaneous = (profile.spontaneous_info or "").strip() or "Refiere el motivo de consulta principal de manera natural."
         conditional = (profile.conditional_info or "").strip() or "Responde sobre antecedentes o hábitos solo si se le consulta de forma directa."
@@ -89,6 +128,10 @@ La prioridad es mantener una conversación humana y creíble SIN modificar ni in
 
 === CAPA 1: PERFIL DEL PERSONAJE Y LENGUAJE ===
 - Nombre: {profile.name}, Edad: {profile.age} años
+- IDENTIDAD DE GÉNERO (REGLA ESTRICTA): {gender_hints}
+  Tu género está definido EXCLUSIVAMENTE por esta línea, que viene del sexo registrado en tu ficha.
+  NUNCA lo deduzcas de tu nombre ni de tu apellido: aunque tu nombre suene masculino, femenino o ambiguo,
+  la identidad y la concordancia gramatical que valen son las indicadas acá.
 - Personalidad: {profile.personality}
 - Forma de tratar al médico: usa "{self._doctor_treatment(profile)}".
 - Dialecto: {self._dialect_hints(profile)}

@@ -1,7 +1,51 @@
 from typing import Any, Dict, List, Optional, Union
+from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 import time
 import uuid
+
+
+class PatientSex(str, Enum):
+    """
+    Sexo/género registrado del paciente.
+
+    Es la ÚNICA fuente de verdad del género del paciente: determina la
+    concordancia gramatical que se le indica al LLM en el system prompt
+    y la voz de síntesis (TTS) por defecto. El nombre del paciente no
+    debe usarse para inferir género.
+    """
+    MASCULINO = "masculino"
+    FEMENINO = "femenino"
+    OTRO = "otro"
+
+    @classmethod
+    def coerce(cls, value: Any) -> Optional["PatientSex"]:
+        """
+        Normaliza valores libres heredados ("Masculino", "M", "male", ...) al enum.
+        Devuelve None si no hay dato cargado; cualquier valor no reconocido cae en OTRO.
+        """
+        if value is None:
+            return None
+        if isinstance(value, cls):
+            return value
+        raw = str(value).strip().lower()
+        if not raw:
+            return None
+        if raw in _SEX_ALIASES_MASCULINO:
+            return cls.MASCULINO
+        if raw in _SEX_ALIASES_FEMENINO:
+            return cls.FEMENINO
+        return cls.OTRO
+
+
+# Valores libres heredados que se mapean al enum (cargas viejas del formulario).
+_SEX_ALIASES_MASCULINO = frozenset({
+    "masculino", "masculine", "m", "male", "hombre", "varon", "varón", "h",
+})
+_SEX_ALIASES_FEMENINO = frozenset({
+    "femenino", "femenina", "f", "female", "mujer",
+})
+
 
 class PatientProfile(BaseModel):
     id: str = Field(..., description="Stable identifier (used by UI)")
@@ -23,8 +67,13 @@ class PatientProfile(BaseModel):
         date_of_birth: Optional[str] = None
         dni: Optional[str] = None
         insurance: Optional[str] = None
-        sex: Optional[str] = None
+        sex: Optional[PatientSex] = None
         occupation: Optional[str] = None
+
+        @field_validator('sex', mode='before')
+        @classmethod
+        def normalize_sex(cls, v):
+            return PatientSex.coerce(v)
 
     class TriageInfo(BaseModel):
         reference_short: Optional[str] = None

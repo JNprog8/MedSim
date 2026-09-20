@@ -1,7 +1,7 @@
 import time
 import logging
 
-from backend.domain.models import Encounter, PatientProfile, StudentProfile
+from backend.domain.models import Encounter, PatientProfile, PatientSex, StudentProfile
 from backend.services.container import services
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ DEMO_PATIENT = PatientProfile(
         date_of_birth="2005-03-18",
         dni="45123456",
         insurance="OSDE",
-        sex="Masculino",
+        sex=PatientSex.MASCULINO,
         occupation="Estudiante universitario",
     ),
 
