@@ -423,16 +423,14 @@ export default function StudentPortal({ view: initialView }: StudentPortalProps)
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              {!finished && (
-                                <button
-                                  onClick={() => handleAdoptAndGo(enc.encounter_id)}
-                                  disabled={joiningEncounterId === enc.encounter_id}
-                                  className="inline-flex items-center gap-1 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-slate-700 font-extrabold text-xs transition-colors shadow-sm disabled:opacity-50"
-                                >
-                                  <LogIn className="w-3.5 h-3.5 text-cyan-800" />
-                                  <span>{joiningEncounterId === enc.encounter_id ? 'Entrando...' : 'Entrar'}</span>
-                                </button>
-                              )}
+                              <button
+                                onClick={() => handleAdoptAndGo(enc.encounter_id)}
+                                disabled={joiningEncounterId === enc.encounter_id}
+                                className="inline-flex items-center gap-1 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-slate-700 font-extrabold text-xs transition-colors shadow-sm disabled:opacity-50"
+                              >
+                                <LogIn className="w-3.5 h-3.5 text-cyan-800" />
+                                <span>{joiningEncounterId === enc.encounter_id ? 'Abriendo...' : finished ? 'Ver sesión' : 'Entrar'}</span>
+                              </button>
                             </td>
                           </tr>
                         )

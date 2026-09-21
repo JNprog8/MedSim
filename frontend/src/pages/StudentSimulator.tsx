@@ -611,6 +611,12 @@ export default function StudentSimulator() {
         </div>
       )}
 
+      {chatLocked && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-center text-xs font-semibold py-2">
+          Sesión finalizada · podés consultar la transcripción y la ficha clínica.
+        </div>
+      )}
+
       {/* Main Grid: Chat Left, Medical record right */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full flex-1 min-h-0">
 
