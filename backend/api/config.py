@@ -5,7 +5,17 @@ router = APIRouter()
 
 @router.get("/config_state")
 async def get_config_state():
-    stt_configured = bool(settings.STT_API_KEY)
+    stt_url = (settings.STT_API_URL or "").lower()
+    stt_is_local = bool(
+        "stt-ar" in stt_url
+        or "http://stt" in stt_url
+        or "transcribe" in stt_url
+        or "localhost" in stt_url
+        or "127.0.0.1" in stt_url
+        or "host.docker.internal" in stt_url
+        or (settings.STT_API_KEY or "").lower() in ("local", "none", "no-key")
+    )
+    stt_configured = bool(settings.STT_API_KEY) or stt_is_local
     tts_url = (settings.TTS_API_URL or "").lower()
     tts_is_local = bool(
         "audio/tts" in tts_url

@@ -22,6 +22,28 @@ class STTService:
             len(self.api_key or ""),
         )
 
+    def _is_local_or_stt_ar(self) -> bool:
+        """
+        Determina si se debe usar el microservicio local STT-ar (FastAPI con POST /v1/transcribe).
+        Detecta URLs internas de Docker (http://stt:8000), localhost, host.docker.internal,
+        o URLs que contengan 'stt-ar' o keys tipo 'local' / 'none'.
+        """
+        url = (self.api_url or "").lower()
+        if not url:
+            return False
+        if "generativelanguage.googleapis.com" in url or "api.groq.com" in url or "api.openai.com" in url:
+            return False
+        return (
+            "stt-ar" in url
+            or "http://stt" in url
+            or "transcribe" in url
+            or "localhost" in url
+            or "127.0.0.1" in url
+            or "host.docker.internal" in url
+            or not self.api_key
+            or (self.api_key or "").lower() in ("local", "none", "no-key")
+        )
+
     def _is_gemini(self) -> bool:
         # Check if URL explicitly points to Google Gemini
         if self.api_url and "generativelanguage.googleapis.com" in self.api_url.lower():
@@ -37,6 +59,31 @@ class STTService:
         return False
 
     async def transcribe_audio(self, audio_bytes: bytes, content_type: str = "audio/wav", filename: str = "audio.wav") -> Dict[str, Any]:
+        # --- CASO 1: Servicio local / Docker STT-ar (Whisper Rioplatense) ---
+        if self._is_local_or_stt_ar():
+            base = (self.api_url or "http://stt:8000").rstrip('/')
+            url = base if (base.endswith("/v1/transcribe") or base.endswith("/transcribe")) else f"{base}/v1/transcribe"
+
+            headers = {}
+            if self.api_key and self.api_key.lower() not in ("local", "none", "no-key"):
+                headers["Authorization"] = f"Bearer {self.api_key}"
+
+            form = aiohttp.FormData()
+            form.add_field("file", audio_bytes, filename=filename, content_type=content_type)
+
+            logger.info(f"[STTService] Invocando STT-ar ({url}) con {len(audio_bytes)} bytes de audio")
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, data=form, params={"language": "es"}) as response:
+                    if response.status >= 400:
+                        body = await response.text()
+                        logger.error(f"[STTService] Error {response.status} de STT-ar: {body}")
+                        raise HTTPException(status_code=response.status, detail=f"Error en STT-ar: {body}")
+                    payload = await response.json()
+                    recognized_text = payload.get("text", "").strip()
+                    logger.info(f"[STTService] Transcripción exitosa de STT-ar: '{recognized_text}'")
+                    return {"text": recognized_text, "model": payload.get("model", self.model or "stt-ar")}
+
+        # Para servicios SaaS comerciales (Groq, OpenAI, Gemini), la API key es obligatoria
         if not self.api_key:
             raise HTTPException(status_code=400, detail="STT API key not configured")
 

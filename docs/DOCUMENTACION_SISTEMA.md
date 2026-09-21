@@ -17,10 +17,10 @@ graph TD
     Services --> AudioOrchestrator[Audio Orchestrator]
     Services --> AutoEvaluationService[Auto Evaluation Service]
     Services --> Repositories[Repository Layer / Motor AsyncIO]
-    
     Repositories --> MongoDB[(MongoDB Database)]
+    
     AudioOrchestrator --> LLMService[LLM Service: Groq / OpenAI / Ollama]
-    AudioOrchestrator --> STTService[STT Service: Whisper]
+    AudioOrchestrator --> STTService[STT Service: STT-ar Whisper Rioplatense / Groq]
     AudioOrchestrator --> TTSService[TTS Service: Piper TTS-ar / Cartesia]
 ```
 
@@ -85,7 +85,7 @@ sequenceDiagram
 
     Student->>API: Enviar Audio (POST /api/audio_turn)
     API->>Orch: process_audio_file()
-    Orch->>STT: Transcribir audio a texto (Whisper)
+    Orch->>STT: Transcribir audio a texto (Whisper / STT-ar)
     STT-->>Orch: Texto transcripto
     Orch->>DB: Guardar mensaje del estudiante
     Orch->>Hub: Broadcast 'message_added' (user)

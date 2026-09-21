@@ -40,7 +40,9 @@ static_dir = BASE_DIR / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-app.mount("/assets", StaticFiles(directory=str(BASE_DIR / "frontend" / "dist" / "assets")), name="react_assets")
+assets_dir = BASE_DIR / "frontend" / "dist" / "assets"
+if assets_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="react_assets")
 img_dir = BASE_DIR / "frontend" / "dist" / "IMG"
 if img_dir.exists():
     app.mount("/IMG", StaticFiles(directory=str(img_dir)), name="react_images")

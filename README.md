@@ -144,7 +144,9 @@ Todas las variables se configuran en `.env`. El archivo `.env.example` contiene 
 | `PATIENT_LLM_URL` | URL base del proveedor LLM (compatible con API OpenAI) |
 | `PATIENT_LLM_API_KEY` | API key del proveedor LLM |
 | `PATIENT_LLM_MODEL` | Nombre del modelo a usar |
-| `STT_API_URL` / `STT_API_KEY` / `STT_MODEL` | Proveedor de transcripción de voz (Groq / OpenAI Whisper) |
+| `STT_API_URL` | URL del servicio STT. Para **STT-ar en Docker**: `http://stt:8000` (misma red) o `http://host.docker.internal:8002` |
+| `STT_API_KEY` | API key (dejar vacía o `local` para STT-ar interno, o `gsk_...` para Groq) |
+| `STT_MODEL` | Nombre del modelo (`stt-ar-large-v3-turbo-v1` para STT-ar, o `whisper-large-v3-turbo` para Groq) |
 | `TTS_API_URL` | URL del servicio TTS. Para **TTS-ar en Docker**: `http://tts:8000` (misma red) o `http://host.docker.internal:8001` |
 | `TTS_API_KEY` | API key (dejar vacía o `local` para TTS-ar interno) |
 | `TTS_VOICE_ID` | Identificador de voz (`0` a `5` para arquetipos clínicos de TTS-ar o nombre/UUID) |
