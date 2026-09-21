@@ -29,14 +29,15 @@ ENV/
 env/
 
 # IDEs
-
-# Personal Podman Environment
-podman-local/
-podman-guide.md
+.idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
+
+# Personal Podman Environment
+podman-local/
+podman-guide.md
 
 # FastAPI/Uvicorn
 .env
