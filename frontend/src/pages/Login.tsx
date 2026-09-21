@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Lock, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react'
+import { Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 
 export default function Login() {
   const [password, setPassword] = useState('')
@@ -31,8 +31,8 @@ export default function Login() {
           }
           // Solo redirigir si se requiere autenticación Y ya está autenticado
           if (data.required && data.authenticated) {
-            const cleanNext = nextPath.startsWith('/frontend') 
-              ? nextPath.replace(/^\/frontend/, '') 
+            const cleanNext = nextPath.startsWith('/frontend')
+              ? nextPath.replace(/^\/frontend/, '')
               : nextPath
             navigate(cleanNext === '/index' ? '/' : (cleanNext || '/'), { replace: true })
             return
@@ -96,7 +96,7 @@ export default function Login() {
 
   if (checkingAuth) {
     return (
-      <div 
+      <div
         className="min-h-screen w-full flex items-center justify-center relative z-10 overflow-hidden bg-cover bg-center bg-no-repeat bg-fixed"
         style={{ backgroundImage: "url('/IMG/imagendefondoMedsim.jpg')" }}
       >
@@ -110,7 +110,7 @@ export default function Login() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen w-full flex flex-col justify-center items-center py-12 px-4 relative z-10 overflow-hidden bg-cover bg-center bg-no-repeat bg-fixed"
       style={{
         backgroundImage: "url('/IMG/imagendefondoMedsim.jpg')"
@@ -157,31 +157,24 @@ export default function Login() {
             </div>
           )}
 
-          {/* Local Dev Info Badge */}
-          {!isAuthRequired && (
-            <div className="mb-6 p-3.5 rounded-2xl bg-cyan-50/90 border border-cyan-200/80 flex items-center gap-2.5 text-cyan-900 text-xs font-medium">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-cyan-700" />
-              <span>Modo desarrollo: podés ingresar con cualquier clave o dejarla vacía.</span>
-            </div>
-          )}
 
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
-              <label 
-                htmlFor="site-password" 
+              <label
+                htmlFor="site-password"
                 className="text-xs font-bold text-slate-700 uppercase tracking-wider"
               >
-                Contraseña {isAuthRequired ? '' : '(Opcional en desarrollo)'}
+                Contraseña
               </label>
-              
+
               <div className="relative flex items-center">
                 <input
                   id="site-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isAuthRequired ? "••••••••••••" : "Sin clave requerida en dev"}
+                  placeholder={isAuthRequired ? "••••••••••••" : ""}
                   autoFocus
                   required={isAuthRequired}
                   disabled={loading}
@@ -222,11 +215,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Footer Card */}
-          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-xs text-slate-400 font-medium">
-            <ShieldCheck className="w-4 h-4 text-cyan-700" />
-            <span>Acceso seguro protegido</span>
-          </div>
         </div>
       </main>
     </div>

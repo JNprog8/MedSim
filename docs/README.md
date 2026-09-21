@@ -31,6 +31,8 @@ El código del repositorio es la autoridad para describir lo implementado. El ma
 
 ## Recorridos sugeridos
 
+Para profesores que crean casos: [Creación de pacientes simulados](CREACION_DE_PACIENTES.md).
+
 ### Para desarrollo
 
 1. [Arquitectura](03-arquitectura/README.md)

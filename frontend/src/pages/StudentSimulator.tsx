@@ -94,6 +94,8 @@ export default function StudentSimulator() {
   // Simulation Data
   const [messages, setMessages] = useState<Message[]>([])
   const [patient, setPatient] = useState<PatientView | null>(null)
+  const [studentName, setStudentName] = useState('')
+  const [evaluatorName, setEvaluatorName] = useState('')
 
   // Input fields
   const [textInput, setTextInput] = useState('')
@@ -142,6 +144,8 @@ export default function StudentSimulator() {
       const data = await resp.json()
 
       setPatient(data.patient)
+      setStudentName(data.student_name || '')
+      setEvaluatorName(data.evaluator_name || '')
       setChatLocked(data.finished_at !== null)
 
       // Fetch history
@@ -540,6 +544,24 @@ export default function StudentSimulator() {
   }
 
   const sttConfigured = audioConfig?.stt_api_key_configured || audioConfig?.stt_configured
+  const identityFields = patient ? [
+    ['DNI/Legajo', patient.administrative?.dni],
+    ['Fecha de nacimiento', patient.administrative?.date_of_birth],
+    ['Obra social / prepaga', patient.administrative?.insurance],
+    ['Sexo asignado al nacer', patient.administrative?.birth_sex],
+    ['Ocupación', patient.administrative?.occupation],
+  ].filter(([, value]) => Boolean(value)) : []
+  const hasInstitutionalHistory = Boolean(patient && [
+    patient.institutional_history?.allergies,
+    patient.institutional_history?.diagnoses,
+    patient.institutional_history?.surgeries,
+    patient.institutional_history?.medications_current,
+  ].some((items: unknown) => Array.isArray(items) && items.length > 0))
+  const hasRecentStudies = Boolean(patient && [
+    patient.recent_studies?.labs,
+    patient.recent_studies?.imaging,
+    patient.recent_studies?.notes,
+  ].some((items: unknown) => Array.isArray(items) && items.length > 0))
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -556,7 +578,10 @@ export default function StudentSimulator() {
             </Link>
             <div>
               <h1 className="font-extrabold text-cyan-900 text-lg leading-none">Consultorio Virtual</h1>
-              <p className="text-2xs text-slate-500 font-medium mt-1 uppercase tracking-wide">Paciente: {patient?.name} {patient?.last_name || ''} ({patient?.age} años)</p>
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-slate-500 font-medium mt-1">
+                <span><strong className="text-slate-700">Estudiante:</strong> {studentName || 'Sin asignar'}</span>
+                <span className="text-slate-300">·</span>
+                <span><strong className="text-slate-700">Evaluador:</strong> {evaluatorName || 'Sin asignar'}</span>              </div>
             </div>
           </div>
 
@@ -583,6 +608,12 @@ export default function StudentSimulator() {
       {statusMsg && (
         <div className="bg-cyan-900 text-white text-center text-xs font-semibold py-2">
           {statusMsg}
+        </div>
+      )}
+
+      {chatLocked && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-center text-xs font-semibold py-2">
+          Sesión finalizada · podés consultar la transcripción y la ficha clínica.
         </div>
       )}
 
@@ -614,7 +645,7 @@ export default function StudentSimulator() {
                     >
                       <div className="flex items-center justify-between gap-6 mb-1.5">
                         <span className="text-2xs font-bold text-slate-400 uppercase tracking-wide">
-                          {isUser ? 'Tú (Médico)' : 'Paciente'}
+                          {isUser ? (studentName ? `${studentName}` : 'Tú (Médico)') : (patient?.name || 'Paciente')}
                         </span>
                         {m.audio_url && (
                           <button
@@ -716,7 +747,7 @@ export default function StudentSimulator() {
                 <div>
                   <h3 className="font-extrabold text-cyan-900 text-base leading-none">{patient.name} {patient.last_name || ''}</h3>
                   <span className="text-xs text-slate-500 font-semibold block mt-1.5">
-                    Edad: {patient.age} años | Origen: {patient.region}
+                    Edad: {patient.age} años | Origen: {patient.region || 'Bariloche, Río Negro, Argentina'}
                   </span>
                 </div>
               </div>
@@ -729,34 +760,22 @@ export default function StudentSimulator() {
                     <span>Datos de Identificación</span>
                   </h4>
                   <div className="bg-slate-50 border border-slate-200/40 rounded-xl p-3 text-xs space-y-2">
-                    {patient.administrative.dni && (
-                      <div className="flex justify-between"><span className="text-slate-500">DNI/Legajo</span><span className="font-bold text-slate-800">{patient.administrative.dni}</span></div>
-                    )}
-                    {patient.administrative.date_of_birth && (
-                      <div className="flex justify-between"><span className="text-slate-500">Fecha Nacimiento</span><span className="font-bold text-slate-800">{patient.administrative.date_of_birth}</span></div>
-                    )}
-                    {patient.administrative.insurance && (
-                      <div className="flex justify-between"><span className="text-slate-500">Obra Social / Prepaga</span><span className="font-bold text-slate-800">{patient.administrative.insurance}</span></div>
-                    )}
-                    {patient.administrative.sex && (
-                      <div className="flex justify-between"><span className="text-slate-500">Sexo</span><span className="font-bold text-slate-800 capitalize">{patient.administrative.sex}</span></div>
-                    )}
-                    {patient.administrative.occupation && (
-                      <div className="flex justify-between"><span className="text-slate-500">Ocupación</span><span className="font-bold text-slate-800">{patient.administrative.occupation}</span></div>
+                    {identityFields.length > 0 ? identityFields.map(([label, value]) => (
+                      <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><span className="font-bold text-slate-800 text-right capitalize">{String(value)}</span></div>
+                    )) : (
+                      <p className="text-slate-500 italic">No hay datos de identificación cargados.</p>
                     )}
                   </div>
                 </div>
               )}
 
               {/* Triage */}
-              {patient.triage?.reference_short && (
-                <div className="space-y-2">
-                  <h4 className="text-2xs font-extrabold text-slate-500 uppercase tracking-wider">Motivo de consulta (Triage)</h4>
-                  <div className="bg-slate-50 border border-slate-200/40 rounded-xl p-3 text-xs text-slate-800 font-semibold leading-relaxed">
-                    {patient.triage.reference_short}
-                  </div>
+              <div className="space-y-2">
+                <h4 className="text-2xs font-extrabold text-slate-500 uppercase tracking-wider">Motivo de consulta (Triage)</h4>
+                <div className="bg-slate-50 border border-slate-200/40 rounded-xl p-3 text-xs text-slate-800 font-semibold leading-relaxed">
+                  {patient.triage?.reference_short || <span className="text-slate-500 italic font-normal">No hay motivo de consulta cargado.</span>}
                 </div>
-              )}
+              </div>
 
               {/* Clinical History List */}
               {patient.institutional_history && (
@@ -766,6 +785,7 @@ export default function StudentSimulator() {
                     <span>Historia Clínica Institucional</span>
                   </h4>
                   <div className="bg-slate-50 border border-slate-200/40 rounded-xl p-3.5 space-y-4">
+                    {!hasInstitutionalHistory && <p className="text-xs text-slate-500 italic">No hay antecedentes institucionales cargados.</p>}
                     {/* Allergies */}
                     {Array.isArray(patient.institutional_history.allergies) && patient.institutional_history.allergies.length > 0 && (
                       <div className="space-y-1">
@@ -814,6 +834,7 @@ export default function StudentSimulator() {
                 <div className="space-y-2.5">
                   <h4 className="text-2xs font-extrabold text-slate-500 uppercase tracking-wider">Estudios clínicos recientes</h4>
                   <div className="bg-slate-50 border border-slate-200/40 rounded-xl p-3.5 space-y-4">
+                    {!hasRecentStudies && <p className="text-xs text-slate-500 italic">No hay estudios clínicos cargados.</p>}
                     {/* Labs */}
                     {Array.isArray(patient.recent_studies.labs) && patient.recent_studies.labs.length > 0 && (
                       <div className="space-y-1">

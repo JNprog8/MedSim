@@ -75,9 +75,24 @@ async def get_student_view(encounter_id: str):
     if not patient:
         raise HTTPException(status_code=404, detail="Patient profile not found")
 
+    student_name = ""
+    student_identifier = ""
+    if encounter.student_id:
+        try:
+            student = await services.student_service.get_student_id(encounter.student_id)
+            if student:
+                student_name = student.name or ""
+                student_identifier = student.student_identifier or ""
+        except Exception:
+            student_name = encounter.student_id or ""
+
     return {
         "encounter_id": encounter.encounter_id,
         "patient_id": encounter.patient_id,
+        "student_id": encounter.student_id,
+        "student_name": student_name,
+        "student_identifier": student_identifier,
+        "evaluator_name": encounter.evaluator_name or "",
         "finished_at": encounter.finished_at,
         "can_send_messages": encounter.finished_at is None,
         "patient": patient.to_student_view(),

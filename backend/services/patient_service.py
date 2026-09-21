@@ -48,23 +48,5 @@ class PatientService(IPatientService):
             raise PatientServiceError(f"Error al eliminar el paciente {patient_id}", {"error": str(e)})
 
     def build_student_view(self, patient: PatientProfile) -> Dict:
-        """
-        Construye una vista filtrada para el estudiante.
-        Usa Dictionary Comprehension para eficiencia.
-        """
-        keys_to_export = [
-            "id", "name", "last_name", "age", "region", "chief_complaint", 
-            "what_they_feel", "symptoms_reported"
-        ]
-        
-        view = {key: getattr(patient, key) for key in keys_to_export}
-        
-        # Agregar sub-modelos serializados
-        view.update({
-            "administrative": patient.administrative.model_dump(),
-            "triage": patient.triage.model_dump(),
-            "institutional_history": patient.institutional_history.model_dump(),
-            "recent_studies": patient.recent_studies.model_dump(),
-        })
-        
-        return view
+        """Misma vista inicial que recibe el estudiante en el endpoint del encuentro."""
+        return patient.to_student_view()

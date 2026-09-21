@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 import time
@@ -7,12 +7,8 @@ import uuid
 
 class PatientSex(str, Enum):
     """
-    Sexo/género registrado del paciente.
-
-    Es la ÚNICA fuente de verdad del género del paciente: determina la
-    concordancia gramatical que se le indica al LLM en el system prompt
-    y la voz de síntesis (TTS) por defecto. El nombre del paciente no
-    debe usarse para inferir género.
+    Campo de sexo registrado en perfiles anteriores. Se conserva para
+    compatibilidad; los casos nuevos separan birth_sex y self_reference.
     """
     MASCULINO = "masculino"
     FEMENINO = "femenino"
@@ -52,7 +48,7 @@ class PatientProfile(BaseModel):
     name: str
     last_name: str = ""
     age: int
-    region: str = Field("AMBA", description="Region within Argentina")
+    region: str = Field("Bariloche, Río Negro, Argentina", description="Residencia fija del paciente dentro de Argentina")
     avatar: str = Field("male", description="Identifier for visual avatar (male/female)")
     voice: str = Field("1", description="Identifier for TTS voice")
 
@@ -68,6 +64,7 @@ class PatientProfile(BaseModel):
         dni: Optional[str] = None
         insurance: Optional[str] = None
         sex: Optional[PatientSex] = None
+        birth_sex: Optional[Literal["masculino", "femenino", "intersexual", "no_especificado"]] = None
         occupation: Optional[str] = None
 
         @field_validator('sex', mode='before')
@@ -101,7 +98,11 @@ class PatientProfile(BaseModel):
     chief_complaint: str
     what_they_feel: str
     spontaneous_info: Optional[str] = Field("", description="Información que el paciente revela voluntariamente o al inicio")
+    open_question_info: str = Field("", description="Información que aparece ante una pregunta abierta sobre el problema")
     conditional_info: Optional[str] = Field("", description="Información que solo revela si el estudiante le pregunta directamente")
+    patient_concern: str = Field("", description="Preocupación o idea del paciente sobre lo que le ocurre")
+    daily_impact: str = Field("", description="Impacto del problema en su vida cotidiana")
+    visit_expectation: str = Field("", description="Qué espera de esta consulta")
     symptoms_reported: List[Symptom] = Field(default_factory=list)
     
     @field_validator('symptoms_reported', mode='before')
@@ -128,6 +129,9 @@ class PatientProfile(BaseModel):
     medical_history_recall: str = "Low"
     cognitive_confusion: str = "Normal"
     speaking_style: str = "rioplatense"
+    self_reference: Optional[Literal["masculino", "femenino", "neutral"]] = Field(
+        None, description="Concordancia que usa el paciente al hablar de sí mismo"
+    )
 
     def to_student_view(self) -> Dict[str, Any]:
         """
@@ -142,9 +146,7 @@ class PatientProfile(BaseModel):
             "region": self.region,
             "avatar": self.avatar,
             "voice": self.voice,
-            "chief_complaint": self.chief_complaint,
-            "what_they_feel": self.what_they_feel,
-            "symptoms_reported": [s.model_dump() for s in self.symptoms_reported],
+            # La anamnesis se obtiene conversando. Solo se entrega el motivo de triage.
         }
         
         # Inyectar sub-objetos serializados
