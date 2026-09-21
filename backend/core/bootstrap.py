@@ -12,7 +12,7 @@ DEMO_PATIENT = PatientProfile(
     name="Lucas",
     last_name="Fernandez",
     age=21,
-    region="AMBA",
+    region="Bariloche, Río Negro, Argentina",
     avatar="male",
     voice="es-AR-male-1",
 
@@ -70,19 +70,22 @@ DEMO_PATIENT = PatientProfile(
     ),
 
     spontaneous_info=(
-        "El dolor empezó ayer alrededor del ombligo. "
-        "Al principio pensé que era algo que había comido, "
-        "pero después el dolor se fue hacia la parte baja derecha "
-        "de la panza y se hizo más fuerte. Desde entonces tengo "
-        "náuseas, estoy medio decaído y tuve algo de fiebre."
+        "Desde ayer me duele mucho la panza y hoy está peor."
+    ),
+    open_question_info=(
+        "El dolor empezó cerca del ombligo y después se corrió hacia la parte "
+        "baja derecha. También me siento decaído."
     ),
 
     conditional_info=(
-        "El dolor empeora cuando camino, toso o hago movimientos bruscos. "
-        "No tuve diarrea. No tuve vómitos. No recuerdo haber comido nada "
-        "fuera de lo normal. No tengo enfermedades importantes conocidas. "
-        "Nunca me operaron y no tomo medicamentos habitualmente."
+        "Si preguntan por movimiento o tos: el dolor empeora. "
+        "Si preguntan por vómitos o diarrea: no tuve. "
+        "Si preguntan por fiebre o náuseas: tuve ambas. "
+        "Si preguntan por cirugías: nunca me operaron."
     ),
+    patient_concern="Me preocupa que sea algo serio y que tengan que operarme.",
+    daily_impact="Me cuesta caminar y no pude ir a la facultad hoy.",
+    visit_expectation="Quiero saber por qué me duele tanto y que me ayuden a calmarlo.",
 
     symptoms_reported=[
         PatientProfile.Symptom(

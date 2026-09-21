@@ -31,14 +31,20 @@ class PatientFactory:
 
         def parse_key_value_lines(value: Optional[str]) -> Dict[str, str]:
             parsed: Dict[str, str] = {}
+            free_text: List[str] = []
             for line in split_lines(value):
                 if ":" not in line:
+                    free_text.append(line)
                     continue
                 key, raw_value = line.split(":", 1)
                 key = key.strip()
                 normalized_value = raw_value.strip()
-                if key:
+                if key and normalized_value:
                     parsed[key] = normalized_value
+                else:
+                    free_text.append(line)
+            if free_text:
+                parsed["Contexto personal"] = " ".join(free_text)
             return parsed
 
         chief_complaint = str(payload.get("chief_complaint") or "").strip() or "Hola, doc. Vine a la guardia."
@@ -58,14 +64,16 @@ class PatientFactory:
                 receta=true_rx or None,
             )
 
-        # El sexo registrado es la fuente de verdad del género del paciente:
-        # de él se derivan la voz de síntesis y el avatar cuando no vienen explícitos.
+        # Compatibilidad con pacientes anteriores. Los campos nuevos separan
+        # el dato clínico de la forma de hablar y de la voz seleccionada.
         sex = PatientSex.coerce(payload.get("sex"))
+        birth_sex = str(payload.get("birth_sex") or "").strip() or None
+        self_reference = str(payload.get("self_reference") or "").strip() or None
 
         raw_voice = payload.get("voice")
         if raw_voice is not None and str(raw_voice).strip() != "":
             voice = str(raw_voice).strip()
-        elif sex == PatientSex.FEMENINO:
+        elif self_reference == "femenino" or (self_reference is None and sex == PatientSex.FEMENINO):
             voice = "0"
         else:
             voice = "1"
@@ -73,20 +81,15 @@ class PatientFactory:
         raw_avatar = str(payload.get("avatar") or "").strip().lower()
         if raw_avatar:
             avatar = "female" if "female" in raw_avatar else "male"
-        elif sex == PatientSex.FEMENINO:
-            avatar = "female"
-        elif sex == PatientSex.MASCULINO:
-            avatar = "male"
         else:
-            # "Otro" o sin dato: el avatar acompaña a la voz elegida.
-            avatar = "female" if voice == "0" else "male"
+            avatar = "female" if voice in ("0", "es-AR-female-1") else "male"
 
         return PatientProfile(
             id=patient_id,
             name=first_name or full_name or patient_id,
             last_name=last_name,
             age=age,
-            region=str(payload.get("region") or "AMBA").strip() or "AMBA",
+            region=str(payload.get("region") or "Bariloche, Río Negro, Argentina").strip() or "Bariloche, Río Negro, Argentina",
             avatar=avatar,
             voice=voice,
             administrative=PatientProfile.AdministrativeInfo(
@@ -95,6 +98,7 @@ class PatientFactory:
                 dni=str(payload.get("dni") or "").strip() or None,
                 insurance=str(payload.get("insurance") or "").strip() or None,
                 sex=sex,
+                birth_sex=birth_sex,
                 occupation=str(payload.get("occupation") or "").strip() or None,
             ),
             triage=PatientProfile.TriageInfo(reference_short=triage_short or None),
@@ -112,7 +116,11 @@ class PatientFactory:
             chief_complaint=chief_complaint,
             what_they_feel=str(payload.get("what_they_feel") or "").strip() or "Me siento mal.",
             spontaneous_info=str(payload.get("spontaneous_info") or "").strip(),
+            open_question_info=str(payload.get("open_question_info") or "").strip(),
             conditional_info=str(payload.get("conditional_info") or "").strip(),
+            patient_concern=str(payload.get("patient_concern") or "").strip(),
+            daily_impact=str(payload.get("daily_impact") or "").strip(),
+            visit_expectation=str(payload.get("visit_expectation") or "").strip(),
             symptoms_reported=payload.get("symptoms") or [
                 {"name": s, "severity": 5, "duration_days": 1}
                 for s in split_lines(payload.get("symptoms_text"))
@@ -125,5 +133,6 @@ class PatientFactory:
             language_level=str(payload.get("language_level") or "B").strip() or "B",
             medical_history_recall=str(payload.get("medical_history_recall") or "Low").strip() or "Low",
             cognitive_confusion=str(payload.get("cognitive_confusion") or "Normal").strip() or "Normal",
-            speaking_style=str(payload.get("speaking_style") or "rioplatense").strip() or "rioplatense",
+            speaking_style="rioplatense",
+            self_reference=self_reference,
         )

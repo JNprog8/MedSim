@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, type TextareaHTMLAttributes } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, MessageSquare, Download, CheckSquare, Play, RefreshCw, AlertCircle, CheckCircle, Volume2 } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Download, CheckSquare, Play, RefreshCw, AlertCircle, CheckCircle, Volume2, Clipboard, X } from 'lucide-react'
 
 interface Message {
   role: string
@@ -39,6 +39,32 @@ interface Evaluation {
   items: EvaluationItem[]
 }
 
+interface PatientRecord {
+  name: string
+  last_name?: string
+  age: number
+  region?: string
+  administrative?: Record<string, unknown>
+  triage?: Record<string, unknown>
+  institutional_history?: Record<string, string[]>
+  recent_studies?: Record<string, string[]>
+  known_medical_history?: Record<string, unknown>
+}
+
+function AutoResizeNote({ className = '', rows = 1, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const resize = () => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`
+  }
+
+  useLayoutEffect(resize, [props.value])
+
+  return <textarea {...props} ref={textareaRef} rows={rows} onInput={event => { resize(); props.onInput?.(event) }} className={`resize-none overflow-y-auto min-h-[34px] max-h-[150px] ${className}`} />
+}
+
 export default function EvaluatorEncounter() {
   const [searchParams] = useSearchParams()
   const encounterId = searchParams.get('encounter_id') || ''
@@ -53,6 +79,8 @@ export default function EvaluatorEncounter() {
   const [studentIdNum, setStudentIdNum] = useState('')
   const [evaluatorName, setEvaluatorName] = useState('')
   const [finishedAt, setFinishedAt] = useState<number | null>(null)
+  const [patientRecord, setPatientRecord] = useState<PatientRecord | null>(null)
+  const [showPatientFile, setShowPatientFile] = useState(false)
 
   // Chat and Evaluation states
   const [messages, setMessages] = useState<Message[]>([])
@@ -104,6 +132,7 @@ export default function EvaluatorEncounter() {
         if (patResp.ok) {
           const p = await patResp.json()
           setPatientName(`${p.name} (${p.age})`)
+          setPatientRecord(p)
         } else {
           setPatientName(encData.patient_id)
         }
@@ -397,6 +426,24 @@ export default function EvaluatorEncounter() {
   }
 
   const isFinished = finishedAt !== null
+  const patientIdentityFields: Array<[string, string]> = patientRecord ? [
+    ['DNI/Legajo', patientRecord.administrative?.dni],
+    ['Fecha de nacimiento', patientRecord.administrative?.date_of_birth],
+    ['Obra social / prepaga', patientRecord.administrative?.insurance],
+    ['Sexo asignado al nacer', patientRecord.administrative?.birth_sex],
+    ['Ocupación', patientRecord.administrative?.occupation],
+  ].filter((entry): entry is [string, string] => typeof entry[1] === 'string' && Boolean(entry[1])) : []
+  const patientHistoryGroups: Array<[string, string[]]> = patientRecord ? [
+    ['Alergias', patientRecord.institutional_history?.allergies || []] as [string, string[]],
+    ['Diagnósticos previos', patientRecord.institutional_history?.diagnoses || []] as [string, string[]],
+    ['Cirugías previas', patientRecord.institutional_history?.surgeries || []] as [string, string[]],
+    ['Medicación actual', patientRecord.institutional_history?.medications_current || []] as [string, string[]],
+  ].filter(([, values]) => Array.isArray(values) && values.length > 0) : []
+  const patientStudyGroups: Array<[string, string[]]> = patientRecord ? [
+    ['Laboratorios', patientRecord.recent_studies?.labs || []] as [string, string[]],
+    ['Imágenes', patientRecord.recent_studies?.imaging || []] as [string, string[]],
+    ['Notas', patientRecord.recent_studies?.notes || []] as [string, string[]],
+  ].filter(([, values]) => Array.isArray(values) && values.length > 0) : []
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-10">
@@ -519,11 +566,37 @@ export default function EvaluatorEncounter() {
         </section>
 
         {/* Right Column: SEGUE checklist evaluation */}
-        <section className="bg-white border border-slate-200/60 rounded-3xl p-5 flex flex-col h-[calc(100vh-170px)] min-h-[400px]">
-          <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-            <CheckSquare className="w-5 h-5 text-cyan-800" />
-            <h2 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Habilidades de Comunicación SEGUE</h2>
+        <section className="relative bg-white border border-slate-200/60 rounded-3xl p-5 flex flex-col h-[calc(100vh-170px)] min-h-[400px] overflow-hidden">
+          <div className="flex items-center justify-between gap-3 mb-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-cyan-800" />
+              <h2 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Habilidades de Comunicación CG</h2>
+            </div>
+            <button type="button" onClick={() => setShowPatientFile(current => !current)} className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-colors ${showPatientFile ? 'border-cyan-300 bg-cyan-50 text-cyan-900' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+              <Clipboard className="w-3.5 h-3.5" /> Ficha clínica
+            </button>
           </div>
+
+          {showPatientFile && (
+            <aside className="absolute inset-x-3 top-14 bottom-3 z-20 overflow-y-auto rounded-2xl border border-cyan-200 bg-white p-4 shadow-xl scrollbar-thin">
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-sm">Ficha clínica del paciente</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Datos cargados para este caso</p>
+                </div>
+                <button type="button" onClick={() => setShowPatientFile(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Cerrar ficha clínica"><X className="w-4 h-4" /></button>
+              </div>
+              {!patientRecord ? <p className="text-xs text-slate-500 italic py-5">No hay ficha clínica cargada.</p> : (
+                <div className="space-y-4 pt-4 text-xs">
+                  <div className="rounded-xl bg-cyan-50 border border-cyan-100 p-3"><strong className="text-cyan-950">{patientRecord.name} {patientRecord.last_name || ''}</strong><p className="text-slate-600 mt-1">{patientRecord.age} años · {patientRecord.region || 'Bariloche, Río Negro, Argentina'}</p></div>
+                  <div><h4 className="font-extrabold uppercase tracking-wider text-slate-500 text-2xs mb-2">Identificación</h4>{patientIdentityFields.length ? <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">{patientIdentityFields.map(([label, value]) => <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><strong className="text-right text-slate-800 capitalize">{String(value)}</strong></div>)}</div> : <p className="text-slate-500 italic">No hay datos de identificación cargados.</p>}</div>
+                  <div><h4 className="font-extrabold uppercase tracking-wider text-slate-500 text-2xs mb-2">Motivo de consulta</h4><p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">{String(patientRecord.triage?.reference_short || 'No hay motivo de consulta cargado.')}</p></div>
+                  <div><h4 className="font-extrabold uppercase tracking-wider text-slate-500 text-2xs mb-2">Antecedentes institucionales</h4>{patientHistoryGroups.length ? <div className="space-y-2">{patientHistoryGroups.map(([label, values]) => <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><strong className="text-slate-700">{label}</strong><p className="text-slate-600 mt-1">{values.join(' · ')}</p></div>)}</div> : <p className="text-slate-500 italic">No hay antecedentes institucionales cargados.</p>}</div>
+                  <div><h4 className="font-extrabold uppercase tracking-wider text-slate-500 text-2xs mb-2">Estudios clínicos</h4>{patientStudyGroups.length ? <div className="space-y-2">{patientStudyGroups.map(([label, values]) => <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><strong className="text-slate-700">{label}</strong><p className="text-slate-600 mt-1">{values.join(' · ')}</p></div>)}</div> : <p className="text-slate-500 italic">No hay estudios clínicos cargados.</p>}</div>
+                </div>
+              )}
+            </aside>
+          )}
 
           <div className="flex-1 overflow-y-auto space-y-6 pr-1.5 scrollbar-thin">
             {catalog.sections.map((section, sIdx) => {
@@ -579,13 +652,11 @@ export default function EvaluatorEncounter() {
                               </label>
                             </div>
                             
-                            {/* Notes textarea – resizable vertically */}
-                            <textarea
+                            <AutoResizeNote
                               placeholder="Observación o nota..."
                               value={note}
-                              rows={1}
                               onChange={(e) => handleUpdateItem(item.id, 'notes', e.target.value)}
-                              className="flex-1 min-w-[180px] bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-2xs outline-none focus:border-cyan-500 transition-colors resize-y"
+                              className="flex-1 min-w-[180px] bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-2xs outline-none focus:border-cyan-500 transition-colors"
                             />
                           </div>
                         </div>

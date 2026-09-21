@@ -14,19 +14,25 @@ class PatientFormPayload(BaseModel):
     first_name: str
     last_name: str = ""
     age: int
-    region: str = "AMBA"
+    region: str = "Bariloche, Río Negro, Argentina"
     avatar: str = "female"
     voice: str = "0"
     date_of_birth: Optional[str] = None
     dni: Optional[str] = None
     insurance: Optional[str] = None
     sex: Optional[str] = None
+    birth_sex: Optional[str] = None
+    self_reference: Optional[str] = None
     occupation: Optional[str] = None
     triage_short: Optional[str] = None
     chief_complaint: Optional[str] = None
     what_they_feel: Optional[str] = None
     spontaneous_info: Optional[str] = None
+    open_question_info: Optional[str] = None
     conditional_info: Optional[str] = None
+    patient_concern: Optional[str] = None
+    daily_impact: Optional[str] = None
+    visit_expectation: Optional[str] = None
     symptoms: Optional[List[Any]] = None
     symptoms_text: str = ""
     known_history_text: str = ""

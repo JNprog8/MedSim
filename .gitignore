@@ -59,3 +59,7 @@ logs/*.txt
 /backend/unreal_audio_uploads/
 frontend/dist/
 frontend/node_modules/
+
+# Archivos temporales generados al preparar el manual de capacitación
+docs/manual-capacitacion/.build/
+docs/manual-capacitacion/.codex-finalizer/

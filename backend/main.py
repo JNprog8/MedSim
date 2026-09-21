@@ -55,12 +55,12 @@ if audio_dir.exists():
 app.include_router(api_router, prefix="/api")
 
 # --- Frontend Routes (React SPA Catch-all) ---
-@app.get("/favicon.svg")
+@app.get("/favicon.png")
 async def serve_favicon():
-    favicon_path = BASE_DIR / "frontend" / "dist" / "favicon.svg"
+    favicon_path = BASE_DIR / "frontend" / "dist" / "favicon.png"
     if favicon_path.exists():
         return FileResponse(favicon_path)
-    return FileResponse(BASE_DIR / "frontend" / "public" / "favicon.svg")
+    return FileResponse(BASE_DIR / "frontend" / "public" / "favicon.png")
 
 @app.get("/")
 async def root():
