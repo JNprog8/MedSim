@@ -533,8 +533,8 @@ export default function EvaluatorEncounter() {
                   <div
                     key={m.message_id || m.timestamp}
                     className={`flex flex-col max-w-[85%] p-4 rounded-2xl shadow-sm border ${isUser
-                        ? 'bg-slate-50 border-slate-200 ml-auto'
-                        : 'bg-white border-slate-100 mr-auto'
+                      ? 'bg-slate-50 border-slate-200 ml-auto'
+                      : 'bg-white border-slate-100 mr-auto'
                       }`}
                   >
                     <div className="flex items-center justify-between gap-6 mb-1.5">
@@ -545,8 +545,8 @@ export default function EvaluatorEncounter() {
                         <button
                           onClick={() => handlePlayAudio(m.message_id, m.audio_url!)}
                           className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${playingAudioId === m.message_id
-                              ? 'bg-rose-50 border-rose-200 text-rose-600 animate-pulse'
-                              : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-500'
+                            ? 'bg-rose-50 border-rose-200 text-rose-600 animate-pulse'
+                            : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-500'
                             }`}
                           title="Reproducir audio de voz"
                         >

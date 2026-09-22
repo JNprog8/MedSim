@@ -214,8 +214,7 @@ function TagInput({
 
 const BIRTH_SEX_OPTIONS = [
   { id: 'masculino', label: 'Masculino' },
-  { id: 'femenino', label: 'Femenino' },
-  { id: 'intersexual', label: 'Intersexual' },
+  { id: 'femenino', label: 'Femenino' }
 ] as const
 type BirthSexId = typeof BIRTH_SEX_OPTIONS[number]['id'] | ''
 type SelfReferenceId = 'masculino' | 'femenino' | 'neutral' | ''
