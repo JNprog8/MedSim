@@ -22,6 +22,7 @@ async def create_student(student: StudentProfile):
     return await services.student_service.create_or_update_student(student)
 
 @router.delete("/{student_id}")
+@router.delete("/{student_id}/", include_in_schema=False)
 async def delete_student(student_id: str):
     success = await services.student_service.delete_student(student_id)
     if not success:

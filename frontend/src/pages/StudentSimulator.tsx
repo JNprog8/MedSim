@@ -118,6 +118,7 @@ export default function StudentSimulator() {
   const recordingStreamRef = useRef<MediaStream | null>(null)
   const recordingProcessorRef = useRef<ScriptProcessorNode | null>(null)
   const audioChunksRef = useRef<Float32Array[]>([])
+  const recordingStartTimeRef = useRef<number>(0)
 
   // Speech Recognition Ref (Browser Native STT fallback)
   const recognitionRef = useRef<any>(null)
@@ -321,7 +322,7 @@ export default function StudentSimulator() {
   // Text message submission
   const handleSendText = async () => {
     const text = textInput.trim()
-    if (!text || chatLocked) return
+    if (!text || chatLocked || isTyping) return
 
     setTextInput('')
     setIsTyping(true)
@@ -345,6 +346,12 @@ export default function StudentSimulator() {
 
       if (!resp.ok) throw new Error('Error al enviar mensaje')
       const data = await resp.json()
+
+      if (data.ignored) {
+        setIsTyping(false)
+        return
+      }
+
       if (data.assistant_message) {
         setIsTyping(false)
         setMessages(prev => {
@@ -366,7 +373,6 @@ export default function StudentSimulator() {
     if (isRecording) {
       // STOP recording
       setIsRecording(false)
-      setRecordingStatus('Procesando audio...')
 
       if (recordingProcessorRef.current) {
         recordingProcessorRef.current.disconnect()
@@ -383,7 +389,19 @@ export default function StudentSimulator() {
       }
       setTextInput('')
 
+      const elapsedMs = Date.now() - (recordingStartTimeRef.current || 0)
       const sampleRate = recordingContextRef.current?.sampleRate || 44100
+      const totalSamples = audioChunksRef.current.reduce((acc, chunk) => acc + chunk.length, 0)
+      const durationSeconds = totalSamples / sampleRate
+
+      // Descartar audios de menos de 1 segundo o sin muestras capturadas
+      if (durationSeconds < 1.0 || elapsedMs < 1000 || totalSamples === 0) {
+        setRecordingStatus('Audio muy breve descartado (< 1 seg)')
+        setTimeout(() => setRecordingStatus('Micrófono listo'), 2500)
+        return
+      }
+
+      setRecordingStatus('Procesando audio...')
       const audioBlob = encodeWavBlob(audioChunksRef.current, sampleRate)
 
       // Upload recording blob to /api/audio_turn
@@ -402,6 +420,14 @@ export default function StudentSimulator() {
 
         if (!resp.ok) throw new Error('Error al enviar audio al servidor')
         const data = await resp.json()
+
+        if (data.ignored) {
+          setIsTyping(false)
+          setRecordingStatus(data.reason === 'no_speech_detected' ? 'No se detectó voz audible' : 'Audio descartado')
+          setTimeout(() => setRecordingStatus('Micrófono listo'), 2500)
+          return
+        }
+
         setRecordingStatus('Micrófono listo')
 
         if (data.assistant_message) {
@@ -434,6 +460,7 @@ export default function StudentSimulator() {
 
       try {
         audioChunksRef.current = []
+        recordingStartTimeRef.current = Date.now()
         setRecordingStatus('Grabando...')
         setIsRecording(true)
 

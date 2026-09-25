@@ -92,6 +92,7 @@ async def create_patient(payload: Union[PatientProfile, PatientFormPayload, dict
         raise HTTPException(status_code=400, detail=f"Error en validación de paciente: {str(e)}")
 
 @router.delete("/{patient_id}")
+@router.delete("/{patient_id}/", include_in_schema=False)
 async def delete_patient(patient_id: str):
     success = await services.patient_service.delete_patient(patient_id)
     if not success:

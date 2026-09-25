@@ -208,11 +208,28 @@ class Encounter(BaseModel):
         self.chat_history.append(message)
         return message
 
-    def get_llm_context(self) -> List[Dict[str, str]]:
+    def get_llm_context(self, max_messages: int = 24) -> List[Dict[str, str]]:
         """
-        Tell: Devuelve el historial en un formato compatible con LLMs.
+        Tell: Devuelve el historial en un formato compatible con LLMs,
+        asegurando orden cronológico limpio, deduplicación de turnos consecutivos
+        y evitando la saturación de tokens.
         """
-        return [{"role": m.role, "content": m.content} for m in self.chat_history]
+        valid = [m for m in self.chat_history if m.content and m.content.strip()]
+        if not valid:
+            return []
+
+        recent = valid[-max_messages:] if len(valid) > max_messages else valid
+
+        collapsed: List[Dict[str, str]] = []
+        for m in recent:
+            cleaned_content = m.content.strip()
+            if collapsed and collapsed[-1]["role"] == m.role:
+                if cleaned_content not in collapsed[-1]["content"]:
+                    collapsed[-1]["content"] += f"\n{cleaned_content}"
+            else:
+                collapsed.append({"role": m.role, "content": cleaned_content})
+
+        return collapsed
 
 class SegueEvaluationItem(BaseModel):
     id: str

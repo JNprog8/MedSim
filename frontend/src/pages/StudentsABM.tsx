@@ -73,7 +73,7 @@ export default function StudentsABM() {
     
     setStatusMsg('Eliminando alumno...')
     try {
-      const resp = await fetch(`/api/students/${encodeURIComponent(student.id)}/`, {
+      const resp = await fetch(`/api/students/${encodeURIComponent(student.id)}`, {
         method: 'DELETE'
       })
       if (!resp.ok) throw new Error(await resp.text())

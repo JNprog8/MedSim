@@ -64,3 +64,6 @@ frontend/node_modules/
 # Archivos temporales generados al preparar el manual de capacitación
 docs/manual-capacitacion/.build/
 docs/manual-capacitacion/.codex-finalizer/
+
+# Otros archivos
+corre_proyecto_local.md

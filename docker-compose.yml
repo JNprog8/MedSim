@@ -15,8 +15,8 @@ services:
       - .env
     environment:
       MONGO_URL: ${DOCKER_MONGO_URL:-mongodb://mongo:27017/medsim?authSource=admin}
-      MONGO_USER: ${MONGO_ROOT_USERNAME:?Definir MONGO_ROOT_USERNAME en .env}
-      MONGO_PASSWORD: ${MONGO_ROOT_PASSWORD:?Definir MONGO_ROOT_PASSWORD en .env}
+      MONGO_USER: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_PASSWORD: ${MONGO_ROOT_PASSWORD:-secret}
       PYTHONUNBUFFERED: "1"
     volumes:
       - unreal_audio:/app/backend/unreal_audio_uploads
@@ -30,6 +30,10 @@ services:
         max-file: "${LOG_MAX_FILES:-3}"
     depends_on:
       mongo:
+        condition: service_healthy
+      stt:
+        condition: service_healthy
+      tts:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8000') + '/api/config_state', timeout=5)"]
@@ -46,8 +50,8 @@ services:
     ports:
       - "${MONGO_BIND_ADDRESS:-127.0.0.1}:${MONGO_HOST_PORT:-27017}:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?Definir MONGO_ROOT_USERNAME en .env}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Definir MONGO_ROOT_PASSWORD en .env}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-secret}
     volumes:
       - mongo_data:/data/db
     cpus: ${MONGO_CPUS:-2}
@@ -67,9 +71,56 @@ services:
       retries: ${MONGO_HEALTH_RETRIES:-5}
       start_period: ${MONGO_HEALTH_START_PERIOD:-40s}
 
+  stt:
+    image: ghcr.io/l-salvo/medsim-stt:1.0
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    environment:
+      - PORT=8000
+      - STT_MODEL_NAME=${STT_MODEL_NAME:-deepdml/faster-whisper-large-v3-turbo-ct2}
+      - STT_DEVICE=${STT_DEVICE:-auto}
+      - STT_COMPUTE_TYPE=${STT_COMPUTE_TYPE:-int8}
+      - STT_MODEL_ID=${STT_MODEL_ID:-stt-ar-large-v3-turbo-v1}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - medsim_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 240s
+
+  tts:
+    image: ghcr.io/l-salvo/medsim-tts:1.0
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
+    volumes:
+      - voices_data:/app/voices/embeddings
+    networks:
+      - medsim_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/audio/voices || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 volumes:
   mongo_data:
   unreal_audio:
+  voices_data:
 
 networks:
   medsim_net:
